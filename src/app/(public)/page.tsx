@@ -21,7 +21,7 @@ export default function Home() {
                 Browse Meals
               </Link>
               <Link 
-                href="/register" 
+                href="/signup" 
                 className="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-orange-500 transition-colors"
               >
                 Join as Provider
@@ -43,17 +43,48 @@ export default function Home() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-48 bg-gray-200"></div>
+            {[
+              {
+                name: "Margherita Pizza",
+                image: "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=400",
+                price: "$12.99",
+                rating: 4.5
+              },
+              {
+                name: "Chicken Pad Thai",
+                image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400",
+                price: "$14.99",
+                rating: 4.7
+              },
+              {
+                name: "Classic Burger",
+                image: "https://images.unsplash.com/photo-1568901346375-23c44588c66c?w=400",
+                price: "$10.99",
+                rating: 4.3
+              },
+              {
+                name: "Caesar Salad",
+                image: "https://images.unsplash.com/photo-1550304943-0f7545e30a46?w=400",
+                price: "$8.99",
+                rating: 4.2
+              }
+            ].map((meal, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="h-48 bg-gray-200">
+                  <img 
+                    src={meal.image} 
+                    alt={meal.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-2">Delicious Meal {item}</h3>
+                  <h3 className="font-semibold text-lg mb-2">{meal.name}</h3>
                   <p className="text-gray-600 text-sm mb-2">Authentic local cuisine</p>
                   <div className="flex justify-between items-center">
-                    <span className="text-orange-500 font-bold">$12.99</span>
+                    <span className="text-orange-500 font-bold">{meal.price}</span>
                     <div className="flex items-center">
                       <span className="text-yellow-400">★</span>
-                      <span className="text-sm text-gray-600 ml-1">4.5</span>
+                      <span className="text-sm text-gray-600 ml-1">{meal.rating}</span>
                     </div>
                   </div>
                 </div>
@@ -116,20 +147,45 @@ export default function Home() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((provider) => (
-              <div key={provider} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-32 bg-gray-200"></div>
+            {[
+              {
+                name: "Mario's Pizza",
+                image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db7?w=400",
+                rating: 4.8,
+                reviews: 245
+              },
+              {
+                name: "Bangkok Kitchen", 
+                image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400",
+                rating: 4.7,
+                reviews: 189
+              },
+              {
+                name: "Burger House",
+                image: "https://images.unsplash.com/photo-1552566626-52f8b828add3?w=400", 
+                rating: 4.5,
+                reviews: 312
+              }
+            ].map((provider, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="h-32 bg-gray-200">
+                  <img 
+                    src={provider.image} 
+                    alt={provider.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <div className="p-6">
-                  <h3 className="font-semibold text-xl mb-2">Restaurant {provider}</h3>
+                  <h3 className="font-semibold text-xl mb-2">{provider.name}</h3>
                   <p className="text-gray-600 mb-4">Authentic local cuisine • Fast delivery</p>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center">
                       <span className="text-yellow-400">★</span>
-                      <span className="text-sm text-gray-600 ml-1">4.{8 - provider}</span>
-                      <span className="text-sm text-gray-500 ml-2">(200+ reviews)</span>
+                      <span className="text-sm text-gray-600 ml-1">{provider.rating}</span>
+                      <span className="text-sm text-gray-500 ml-2">({provider.reviews}+ reviews)</span>
                     </div>
                     <Link 
-                      href={`/browse/provider/restaurant-${provider}`}
+                      href={`/browse/provider/${provider.name.toLowerCase().replace(/\s+/g, '-')}`}
                       className="text-orange-500 hover:text-orange-600 font-medium"
                     >
                       View Menu →
