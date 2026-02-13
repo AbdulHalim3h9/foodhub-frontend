@@ -19,56 +19,67 @@ interface SignupProps {
 }
 
 const Signup = ({
-  heading = "Signup",
+  heading = "Create an Account",
   logo = {
-    url: "https://www.shadcnblocks.com",
-    src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/logos/shadcnblockscom-wordmark.svg",
-    alt: "logo",
-    title: "shadcnblocks.com",
+    url: "/",
+    src: "https://deifkwefumgah.cloudfront.net/foodhub/block/logos/foodhub-wordmark.svg",
+    alt: "FoodHub",
+    title: "FoodHub",
   },
   buttonText = "Create Account",
-  signupText = "Already a user?",
-  signupUrl = "https://shadcnblocks.com",
+  signupText = "Already have an account?",
+  signupUrl = "/login",
   className,
 }: SignupProps) => {
   return (
-    <section className={cn("h-screen bg-muted", className)}>
-      <div className="flex h-full items-center justify-center">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-6 lg:justify-start">
-          <a href={logo.url}>
-            <img
-              src={logo.src}
-              alt={logo.alt}
-              title={logo.title}
-              className="h-10 dark:invert"
-            />
-          </a>
-          <div className="flex w-full max-w-sm min-w-sm flex-col items-center gap-y-4 rounded-md border border-muted bg-background px-6 py-8 shadow-md">
-            {heading && <h1 className="text-xl font-semibold">{heading}</h1>}
-            <Input
-              type="email"
-              placeholder="Email"
-              className="text-sm"
-              required
-            />
-            <Input
-              type="password"
-              placeholder="Password"
-              className="text-sm"
-              required
-            />
-            <Input
-              type="password"
-              placeholder="Confirm Password"
-              className="text-sm"
-              required
-            />
-            <Button type="submit" className="w-full">
+    <div className={cn("w-full max-w-md mx-auto", className)}>
+      <div className="flex flex-col items-center gap-6">
+        <a href={logo.url} className="mb-2">
+          <span className="text-3xl font-bold text-primary tracking-tight">
+            FoodHub
+          </span>
+        </a>
+
+        <div className="w-full rounded-xl border bg-card text-card-foreground shadow-lg p-8">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold">{heading}</h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Join us to start ordering delicious food.
+            </p>
+          </div>
+
+          <form className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Email
+              </label>
+              <Input type="email" placeholder="m@example.com" required />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Password
+              </label>
+              <Input type="password" placeholder="Create a password" required />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Confirm Password
+              </label>
+              <Input
+                type="password"
+                placeholder="Confirm your password"
+                required
+              />
+            </div>
+
+            <Button type="submit" className="w-full mt-2">
               {buttonText}
             </Button>
-          </div>
-          <div className="flex justify-center gap-1 text-sm text-muted-foreground">
+          </form>
+
+          <div className="flex justify-center gap-1 text-sm text-muted-foreground mt-6">
             <p>{signupText}</p>
             <a
               href={signupUrl}
@@ -79,7 +90,7 @@ const Signup = ({
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
 

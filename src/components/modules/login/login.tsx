@@ -44,138 +44,128 @@ const Login = ({
   };
 
   return (
-    <section className={cn("min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50/30 flex items-center justify-center p-4", className)}>
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <a href={logo.url} className="inline-block">
-            <span className="text-3xl font-bold text-orange-600 tracking-tight">
-              {logo.text}
-            </span>
-          </a>
+    <div className={cn("w-full max-w-md mx-auto", className)}>
+      {/* Logo */}
+      <div className="text-center mb-8">
+        <a href={logo.url} className="inline-block">
+          <span className="text-3xl font-bold text-primary tracking-tight">
+            {logo.text}
+          </span>
+        </a>
+      </div>
+
+      {/* Login Card */}
+      <div className="bg-card text-card-foreground rounded-xl shadow-lg border p-8">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold mb-2">{heading}</h1>
+          {subheading && (
+            <p className="text-sm text-muted-foreground">{subheading}</p>
+          )}
         </div>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {heading}
-            </h1>
-            {subheading && (
-              <p className="text-sm text-gray-600">
-                {subheading}
-              </p>
-            )}
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email Field */}
+          <div className="space-y-2">
+            <Label htmlFor="email">Email address</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10"
+                required
+              />
+            </div>
           </div>
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Field */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email address
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-11 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Password
-                </Label>
-                <a 
-                  href={forgotPasswordUrl}
-                  className="text-xs text-orange-600 hover:text-orange-700 font-medium"
-                >
-                  Forgot password?
-                </a>
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 h-11 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? (
-                    <EyeOff className="size-4" />
-                  ) : (
-                    <Eye className="size-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Remember Me & Submit */}
+          {/* Password Field */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember"
-                  type="checkbox"
-                  className="size-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                />
-                <label htmlFor="remember" className="ml-2 text-sm text-gray-700">
-                  Remember me
-                </label>
-              </div>
-              <Button 
-                type="submit" 
-                className="bg-orange-500 hover:bg-orange-600 h-11 text-base font-medium shadow-sm px-6"
-              >
-                {buttonText}
-              </Button>
-            </div>
-          </form>
-
-          {/* Sign Up Link */}
-          <div className="text-center mt-6">
-            <p className="text-sm text-gray-600">
-              {signupText}{" "}
+              <Label htmlFor="password">Password</Label>
               <a
-                href={signupUrl}
-                className="font-semibold text-orange-600 hover:text-orange-700 transition-colors"
+                href={forgotPasswordUrl}
+                className="text-xs text-primary hover:text-primary/80 font-medium"
               >
-                Sign up
+                Forgot password?
               </a>
-            </p>
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 pr-10"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" />
+                ) : (
+                  <Eye className="size-4" />
+                )}
+              </button>
+            </div>
           </div>
 
-          {/* Footer Note */}
-          <p className="text-center text-xs text-gray-500 mt-4">
-            By continuing, you agree to FoodHub's{" "}
-            <a href="/terms" className="text-orange-600 hover:underline">
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a href="/privacy" className="text-orange-600 hover:underline">
-              Privacy Policy
+          {/* Remember Me & Submit */}
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center space-x-2">
+              <input
+                id="remember"
+                type="checkbox"
+                className="rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <label
+                htmlFor="remember"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Remember me
+              </label>
+            </div>
+            <Button type="submit" className="px-8">
+              {buttonText}
+            </Button>
+          </div>
+        </form>
+
+        {/* Sign Up Link */}
+        <div className="text-center mt-6">
+          <p className="text-sm text-muted-foreground">
+            {signupText}{" "}
+            <a
+              href={signupUrl}
+              className="font-semibold text-primary hover:text-primary/80 transition-colors"
+            >
+              Sign up
             </a>
           </p>
         </div>
+
+        {/* Footer Note */}
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          By continuing, you agree to FoodHub's{" "}
+          <a href="/terms" className="text-primary hover:underline">
+            Terms
+          </a>{" "}
+          and{" "}
+          <a href="/privacy" className="text-primary hover:underline">
+            Privacy Policy
+          </a>
+        </p>
       </div>
-    </section>
+    </div>
   );
 };
 

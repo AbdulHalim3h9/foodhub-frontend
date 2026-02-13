@@ -4,6 +4,18 @@ import {
   HelpCircle,
   LayoutDashboard,
   Settings,
+  Users,
+  ShoppingCart,
+  Store,
+  TrendingUp,
+  FileText,
+  Shield,
+  Package,
+  ChefHat,
+  Menu,
+  X,
+  MapPin,
+  Star,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -55,37 +67,135 @@ type SidebarData = {
   };
   navGroups: NavGroup[];
   footerGroup: NavGroup;
+  type: "admin" | "provider" | "customer";
 };
 
-const sidebarData: SidebarData = {
-  logo: {
-    src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/logos/shadcnblocks-logo.svg",
-    alt: "Shadcnblocks",
-    title: "Shadcnblocks",
-    description: "Build your app",
-  },
-  navGroups: [
-    {
-      title: "Overview",
-      items: [
+const getSidebarData = (
+  type: "admin" | "provider" | "customer",
+): SidebarData => {
+  const commonLogo = {
+    src: "https://deifkwefumgah.cloudfront.net/foodhub/block/logos/foodhub-wordmark.svg",
+    alt: "FoodHub",
+    title: "FoodHub",
+    description:
+      type === "admin"
+        ? "Admin Panel"
+        : type === "provider"
+          ? "Provider Portal"
+          : "Customer Hub",
+  };
+
+  if (type === "admin") {
+    return {
+      logo: commonLogo,
+      navGroups: [
         {
-          label: "Dashboard",
-          icon: LayoutDashboard,
-          href: "#",
-          isActive: true,
+          title: "Main",
+          items: [
+            {
+              label: "Dashboard",
+              icon: LayoutDashboard,
+              href: "/admin",
+              isActive: true,
+            },
+            { label: "Providers", icon: Store, href: "/admin/providers" },
+            { label: "Users", icon: Users, href: "/admin/users" },
+          ],
         },
-        { label: "Tasks", icon: ClipboardList, href: "#" },
-        { label: "Roadmap", icon: BarChart3, href: "#" },
+        {
+          title: "Analytics",
+          items: [
+            { label: "Reports", icon: BarChart3, href: "/admin/reports" },
+            {
+              label: "Transactions",
+              icon: FileText,
+              href: "/admin/transactions",
+            },
+          ],
+        },
       ],
-    },
-  ],
-  footerGroup: {
-    title: "Support",
-    items: [
-      { label: "Help Center", icon: HelpCircle, href: "#" },
-      { label: "Settings", icon: Settings, href: "#" },
-    ],
-  },
+      footerGroup: {
+        title: "System",
+        items: [
+          { label: "Settings", icon: Settings, href: "/admin/settings" },
+          { label: "Support", icon: HelpCircle, href: "/admin/help" },
+        ],
+      },
+      type: "admin",
+    };
+  } else if (type === "provider") {
+    return {
+      logo: commonLogo,
+      navGroups: [
+        {
+          title: "Overview",
+          items: [
+            {
+              label: "Dashboard",
+              icon: LayoutDashboard,
+              href: "/provider/dashboard",
+              isActive: true,
+            },
+            { label: "Orders", icon: ShoppingCart, href: "/provider/orders" },
+            { label: "Menu Items", icon: Menu, href: "/provider/menu" },
+          ],
+        },
+        {
+          title: "Performance",
+          items: [
+            {
+              label: "Analytics",
+              icon: TrendingUp,
+              href: "/provider/analytics",
+            },
+            { label: "Reviews", icon: Star, href: "/provider/reviews" },
+          ],
+        },
+      ],
+      footerGroup: {
+        title: "Account",
+        items: [
+          { label: "Settings", icon: Settings, href: "/provider/settings" },
+          { label: "Help", icon: HelpCircle, href: "/provider/help" },
+        ],
+      },
+      type: "provider",
+    };
+  } else {
+    // Customer
+    return {
+      logo: commonLogo,
+      navGroups: [
+        {
+          title: "My FoodHub",
+          items: [
+            { label: "Browse", icon: Store, href: "/browse", isActive: true },
+            {
+              label: "My Orders",
+              icon: ShoppingCart,
+              href: "/customer/orders",
+            },
+            { label: "Favorites", icon: Star, href: "/customer/favorites" },
+          ],
+        },
+        {
+          title: "Account",
+          items: [
+            { label: "Profile", icon: Users, href: "/customer/profile" },
+            { label: "Addresses", icon: MapPin, href: "/customer/addresses" },
+          ],
+        },
+      ],
+      footerGroup: {
+        title: "Support",
+        items: [
+          { label: "Help Center", icon: HelpCircle, href: "/help" },
+          { label: "Settings", icon: Settings, href: "/customer/settings" },
+        ],
+      },
+      type: "customer",
+    };
+  }
 };
 
 const SidebarLogo = ({ logo }: { logo: SidebarData["logo"] }) => {
@@ -112,7 +222,13 @@ const SidebarLogo = ({ logo }: { logo: SidebarData["logo"] }) => {
   );
 };
 
-const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
+const AppSidebar = ({
+  type = "provider",
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  type?: "admin" | "provider" | "customer";
+}) => {
+  const sidebarData = getSidebarData(type);
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -159,13 +275,19 @@ const AppSidebar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
 
 interface Sidebar1Props {
   className?: string;
+  type?: "admin" | "provider" | "customer";
+  children?: React.ReactNode;
 }
 
-const Sidebar1 = ({ className }: Sidebar1Props) => {
+const Sidebar1 = ({
+  className,
+  type = "provider",
+  children,
+}: Sidebar1Props) => {
   return (
     <SidebarProvider className={cn(className)}>
-      <AppSidebar />
-      <SidebarInset>
+      <AppSidebar type={type} />
+      <SidebarInset className="overflow-x-hidden">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator
@@ -185,7 +307,9 @@ const Sidebar1 = ({ className }: Sidebar1Props) => {
           </Breadcrumb>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
+          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min">
+            {children}
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>

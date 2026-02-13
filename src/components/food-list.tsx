@@ -1,15 +1,9 @@
 import { cn } from "@/lib/utils";
 
-import { Price, PriceValue } from "@/components/shadcnblocks/price";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Heart, Star, ShoppingBag, MapPin } from "lucide-react";
 
 interface FoodPrice {
   regular: number;
@@ -67,7 +61,8 @@ const FOODS_LIST: FoodList = [
       alt: "Chicken Pad Thai",
     },
     link: "/browse/meal/chicken-pad-thai",
-    description: "Traditional stir-fried rice noodles with chicken, peanuts, and lime",
+    description:
+      "Traditional stir-fried rice noodles with chicken, peanuts, and lime",
     price: {
       regular: 14.99,
       currency: "USD",
@@ -83,7 +78,8 @@ const FOODS_LIST: FoodList = [
       alt: "Classic Burger",
     },
     link: "/browse/meal/classic-burger",
-    description: "Juicy beef patty with lettuce, tomato, onion, and special sauce",
+    description:
+      "Juicy beef patty with lettuce, tomato, onion, and special sauce",
     price: {
       regular: 10.99,
       currency: "USD",
@@ -103,7 +99,8 @@ const FOODS_LIST: FoodList = [
       alt: "Caesar Salad",
     },
     link: "/browse/meal/caesar-salad",
-    description: "Fresh romaine lettuce with parmesan, croutons, and caesar dressing",
+    description:
+      "Fresh romaine lettuce with parmesan, croutons, and caesar dressing",
     price: {
       regular: 8.99,
       currency: "USD",
@@ -139,7 +136,8 @@ const FOODS_LIST: FoodList = [
       alt: "Vegan Buddha Bowl",
     },
     link: "/browse/meal/vegan-buddha-bowl",
-    description: "Nutritious bowl with quinoa, roasted vegetables, and tahini dressing",
+    description:
+      "Nutritious bowl with quinoa, roasted vegetables, and tahini dressing",
     price: {
       regular: 11.99,
       currency: "USD",
@@ -183,66 +181,94 @@ const FoodCard = ({
   const { regular, sale, currency } = price;
 
   return (
-    <a
-      href={link}
-      className="block h-full w-full max-w-md transition-opacity hover:opacity-80"
-    >
-      <Card className="h-full overflow-hidden p-0 hover:shadow-lg transition-shadow">
-        <CardHeader className="relative block p-0">
-          <AspectRatio ratio={1.268115942} className="overflow-hidden">
-            <img
-              src={image.src}
-              alt={image.alt}
-              className="block size-full object-cover object-center"
-            />
-          </AspectRatio>
-          {badge && (
-            <Badge
-              style={{
-                backgroundColor: badge.color,
-              }}
-              className="absolute start-4 top-4 text-white"
+    <Card className="group h-full overflow-hidden border-none shadow-md hover:shadow-xl transition-all duration-300">
+      <div className="relative aspect-[4/3] overflow-hidden">
+        <a href={link} className="block w-full h-full">
+          <img
+            src={image.src}
+            alt={image.alt}
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+          />
+        </a>
+        <button className="absolute top-3 right-3 p-2 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white text-gray-600 hover:text-red-500 transition-colors z-10">
+          <Heart className="h-4 w-4" />
+        </button>
+        {badge && (
+          <Badge
+            className="absolute top-3 left-3 text-white border-none"
+            style={{ backgroundColor: badge.color || "#f97316" }}
+          >
+            {badge.text}
+          </Badge>
+        )}
+      </div>
+
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <a
+              href={link}
+              className="hover:underline decoration-orange-500/30 underline-offset-4"
             >
-              {badge.text}
-            </Badge>
-          )}
-        </CardHeader>
-        <CardContent className="flex h-full flex-col gap-3 pb-6">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-lg font-semibold text-gray-900">{name}</CardTitle>
-            {rating && (
-              <div className="flex items-center gap-1 text-sm">
-                <span className="text-orange-500">★</span>
-                <span className="text-gray-600">{rating}</span>
-              </div>
+              <h3 className="font-bold text-lg text-gray-900 group-hover:text-primary transition-colors line-clamp-1">
+                {name}
+              </h3>
+            </a>
+            {provider && (
+              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                <MapPin className="h-3 w-3" /> {provider}
+              </p>
             )}
           </div>
-          
-          {provider && (
-            <p className="text-sm text-orange-600 font-medium">{provider}</p>
+          <div className="flex flex-col items-end">
+            <span className="font-bold text-lg">
+              {sale ? (
+                <span className="flex flex-col items-end">
+                  <span className="text-red-500">
+                    {currency === "USD" ? "$" : currency}
+                    {sale.toFixed(2)}
+                  </span>
+                  <span className="text-sm text-muted-foreground line-through font-normal">
+                    {currency === "USD" ? "$" : currency}
+                    {regular.toFixed(2)}
+                  </span>
+                </span>
+              ) : (
+                <span>
+                  {currency === "USD" ? "$" : currency}
+                  {regular.toFixed(2)}
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
+
+        <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[40px]">
+          {description}
+        </p>
+
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          {rating && (
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+              <span className="font-medium text-gray-900">{rating}</span>
+            </div>
           )}
-          
-          <CardDescription className="text-sm text-gray-600 line-clamp-2">
-            {description}
-          </CardDescription>
-          
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            {category && <span>{category}</span>}
-          </div>
-          
-          <div className="mt-auto">
-            <Price onSale={sale != null} className="text-lg font-semibold text-orange-600">
-              <PriceValue price={sale} currency={currency} variant="sale" />
-              <PriceValue
-                price={regular}
-                currency={currency}
-                variant="regular"
-              />
-            </Price>
-          </div>
-        </CardContent>
-      </Card>
-    </a>
+          {category && (
+            <Badge variant="secondary" className="font-normal text-xs">
+              {category}
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+
+      <CardFooter className="p-4 pt-0">
+        <Button className="w-full gap-2 group-hover:bg-orange-600 transition-colors">
+          <ShoppingBag className="h-4 w-4" />
+          Add to Order
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 
