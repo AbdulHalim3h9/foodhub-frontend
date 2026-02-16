@@ -23,82 +23,57 @@ import {
 
 export default function Home() {
   return (
-    <div className="flex flex-col gap-16 pb-16">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 to-white pt-16 pb-32 md:pt-32 md:pb-48">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            {/* Hero Text */}
-            <div className="flex flex-col gap-6 text-center md:text-left">
-              <Badge
-                variant="secondary"
-                className="w-fit mx-auto md:mx-0 bg-orange-100 text-orange-700 hover:bg-orange-200"
-              >
-                #1 Food Delivery Service
-              </Badge>
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 leading-[1.1]">
-                Delicious Food <br />
-                <span className="text-primary">Delivered To You</span>
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-lg mx-auto md:mx-0">
-                Experience the best local restaurants at your doorstep. Fresh,
-                fast, and ready to satisfy your cravings.
+    <div className="flex flex-col">
+      {/* Promotional Banner */}
+      <section className="bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 py-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-white text-center">
+            <div className="flex items-center gap-2">
+              <Star className="size-5 fill-white" />
+              <p className="text-base md:text-lg font-semibold">
+                Sign up for free delivery on your first order
               </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 mt-4 justify-center md:justify-start">
-                <div className="relative w-full max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search for food or restaurants..."
-                    className="pl-9 pr-4 h-12 bg-white shadow-sm border-gray-200 focus-visible:ring-primary"
-                  />
-                </div>
-                <Button
-                  size="lg"
-                  className="h-12 px-8 text-base shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all"
-                >
-                  Find Food
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-6 justify-center md:justify-start pt-4 text-sm text-muted-foreground font-medium">
-                <div className="flex items-center gap-2">
-                  <Clock className="size-4 text-primary" /> 30 min Delivery
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="size-4 text-primary" /> Secure Payment
-                </div>
-              </div>
             </div>
+            <Link href="/signup">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="bg-white text-orange-600 hover:bg-orange-50 font-semibold"
+              >
+                Sign Up Now
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
 
-            {/* Hero Image */}
-            <div className="relative">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-orange-500/10 rounded-full blur-3xl -z-10 animate-pulse" />
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl skew-y-1 hover:skew-y-0 transition-transform duration-700 ease-out border-4 border-white">
-                <Image
-                  src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1000&auto=format&fit=crop"
-                  alt="Delicious Food Spread"
-                  width={600}
-                  height={400}
-                  className="w-full object-cover"
-                  priority
+      {/* Search Section */}
+      <section className="bg-white py-6 border-b">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search for food or restaurants..."
+                  className="pl-9 pr-4 h-12 bg-white shadow-sm border-gray-300 focus-visible:ring-primary"
                 />
               </div>
-              {/* Floating Badge */}
-              <Card className="absolute -bottom-6 -left-6 w-auto p-4 shadow-xl border-none animate-bounce delay-1000 hidden md:block">
-                <div className="flex items-center gap-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <Star className="size-5 text-green-600 fill-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-900">4.9/5 Rating</p>
-                    <p className="text-xs text-muted-foreground">
-                      Based on 10k+ reviews
-                    </p>
-                  </div>
-                </div>
-              </Card>
+              <Button
+                size="lg"
+                className="h-12 px-8 text-base shadow-md hover:shadow-lg transition-all"
+              >
+                Find Food
+              </Button>
+            </div>
+            <div className="flex items-center gap-6 justify-center mt-4 text-sm text-muted-foreground font-medium">
+              <div className="flex items-center gap-2">
+                <Clock className="size-4 text-primary" /> 30 min Delivery
+              </div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="size-4 text-primary" /> Secure Payment
+              </div>
             </div>
           </div>
         </div>

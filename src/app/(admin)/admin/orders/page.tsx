@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -289,10 +290,11 @@ export default function AdminOrders() {
             </TableHeader>
             <TableBody>
               {filteredOrders.map((order) => (
-                <TableRow key={order.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">
-                    {order.orderNumber}
-                  </TableCell>
+                <Link href={`/admin/orders/${order.id}`}>
+                  <TableRow key={order.id} className="hover:bg-muted/50 cursor-pointer">
+                    <TableCell className="font-medium">
+                      {order.orderNumber}
+                    </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <img
@@ -350,6 +352,7 @@ export default function AdminOrders() {
                     </div>
                   </TableCell>
                 </TableRow>
+                </Link>
               ))}
             </TableBody>
           </Table>
