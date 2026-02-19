@@ -1,6 +1,16 @@
 "use client";
 
-import { Book, Menu, Sunset, Trees, Zap, Utensils, ShoppingCart, User, Search } from "lucide-react";
+import {
+  Book,
+  Menu,
+  Sunset,
+  Trees,
+  Zap,
+  Utensils,
+  ShoppingCart,
+  User,
+  Search,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 
 import { cn } from "@/lib/utils";
@@ -132,21 +142,21 @@ const Navbar1 = ({
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       // Show navbar when scrolling up or at top
       if (currentScrollY < lastScrollY || currentScrollY < 10) {
         setIsVisible(true);
-      } 
+      }
       // Hide navbar when scrolling down
       else if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsVisible(false);
       }
-      
+
       setLastScrollY(currentScrollY);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -156,11 +166,11 @@ const Navbar1 = ({
   };
 
   return (
-    <section 
+    <section
       className={cn(
         "fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-orange-100 transition-transform duration-300 ease-in-out",
         isVisible ? "translate-y-0" : "-translate-y-full",
-        className
+        className,
       )}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -174,9 +184,9 @@ const Navbar1 = ({
                 FoodHub
               </span>
             </a>
-            
+
             {/* Navigation Menu */}
-            <NavigationMenu>
+            <NavigationMenu viewport={false}>
               <NavigationMenuList className="gap-1">
                 {menu.map((item) => renderMenuItem(item))}
               </NavigationMenuList>
@@ -199,17 +209,17 @@ const Navbar1 = ({
 
             {/* Auth Buttons */}
             <div className="flex items-center gap-2">
-              <Button 
-                asChild 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
                 className="text-gray-700 hover:text-orange-600 hover:bg-orange-50"
               >
                 <a href={auth.login.url}>{auth.login.title}</a>
               </Button>
-              <Button 
-                asChild 
-                size="sm" 
+              <Button
+                asChild
+                size="sm"
                 className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm"
               >
                 <a href={auth.signup.url}>{auth.signup.title}</a>
@@ -233,9 +243,9 @@ const Navbar1 = ({
               {/* Mobile Search Toggle */}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="text-gray-700 hover:text-orange-600 hover:bg-orange-50"
                   >
                     <Search className="size-5" />
@@ -261,9 +271,9 @@ const Navbar1 = ({
               {/* Mobile Menu Toggle */}
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="text-gray-700 hover:text-orange-600 hover:bg-orange-50"
                   >
                     <Menu className="size-5" />
@@ -272,7 +282,9 @@ const Navbar1 = ({
                 <SheetContent className="overflow-y-auto">
                   <SheetHeader>
                     <SheetTitle>
-                      <span className="text-xl font-bold text-orange-600">FoodHub</span>
+                      <span className="text-xl font-bold text-orange-600">
+                        FoodHub
+                      </span>
                     </SheetTitle>
                   </SheetHeader>
                   <div className="flex flex-col gap-6 mt-6">
@@ -285,15 +297,15 @@ const Navbar1 = ({
                     </Accordion>
 
                     <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
-                      <Button 
-                        asChild 
-                        variant="outline" 
+                      <Button
+                        asChild
+                        variant="outline"
                         className="border-orange-200 text-orange-600 hover:bg-orange-50"
                       >
                         <a href={auth.login.url}>{auth.login.title}</a>
                       </Button>
-                      <Button 
-                        asChild 
+                      <Button
+                        asChild
                         className="bg-orange-500 hover:bg-orange-600 text-white"
                       >
                         <a href={auth.signup.url}>{auth.signup.title}</a>
@@ -345,7 +357,11 @@ const renderMenuItem = (item: MenuItem) => {
 const renderMobileMenuItem = (item: MenuItem) => {
   if (item.items) {
     return (
-      <AccordionItem key={item.title} value={item.title} className="border-b border-gray-100">
+      <AccordionItem
+        key={item.title}
+        value={item.title}
+        className="border-b border-gray-100"
+      >
         <AccordionTrigger className="text-base py-3 font-semibold text-gray-900 hover:text-orange-600 hover:no-underline">
           {item.title}
         </AccordionTrigger>
@@ -359,7 +375,9 @@ const renderMobileMenuItem = (item: MenuItem) => {
               >
                 <div className="text-orange-500 mt-0.5">{subItem.icon}</div>
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">{subItem.title}</div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {subItem.title}
+                  </div>
                   {subItem.description && (
                     <p className="text-xs text-gray-500 mt-0.5">
                       {subItem.description}
@@ -375,9 +393,9 @@ const renderMobileMenuItem = (item: MenuItem) => {
   }
 
   return (
-    <a 
-      key={item.title} 
-      href={item.url} 
+    <a
+      key={item.title}
+      href={item.url}
       className="text-base font-semibold text-gray-900 hover:text-orange-600 py-3 block transition-colors"
     >
       {item.title}
