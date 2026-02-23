@@ -40,10 +40,7 @@ export interface MealData {
 }
 
 export const mealService = {
-  getMeals: async function (
-    params?: GetMealsParams,
-    options?: ServiceOptions,
-  ) {
+  getMeals: async function (params?: GetMealsParams, options?: ServiceOptions) {
     try {
       const url = new URL(`${API_URL}/meals`);
 

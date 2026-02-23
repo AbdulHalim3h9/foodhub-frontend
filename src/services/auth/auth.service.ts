@@ -1,17 +1,24 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { registerSchema, loginSchema, RegisterInput, LoginInput } from "@/lib/validators/auth";
+import {
+  registerSchema,
+  loginSchema,
+  RegisterInput,
+  LoginInput,
+} from "@/lib/validators/auth";
 import { z } from "zod";
 
 export class AuthService {
   private static readonly API_URL = process.env.AUTH_URL;
 
-  static async register(data: RegisterInput): Promise<{ token: string; user: any }> {
+  static async register(
+    data: RegisterInput,
+  ): Promise<{ token: string; user: any }> {
     const response = await fetch(`${this.API_URL}/sign-up/email`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Origin": `${process.env.FRONTEND_URL}`
+        Origin: `${process.env.FRONTEND_URL}`,
       },
       body: JSON.stringify(data),
     });
@@ -29,7 +36,7 @@ export class AuthService {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Origin": `${process.env.FRONTEND_URL}`
+        Origin: `${process.env.FRONTEND_URL}`,
       },
       body: JSON.stringify(data),
     });
@@ -42,7 +49,15 @@ export class AuthService {
     return response.json();
   }
 
-  static async setAuthCookie(token: string): Promise<void> {
+  static async logout() {
+    (await cookies()).delete("token");
+  }
+
+  static async getAuthCookie() {
+    return (await cookies()).get("token");
+  }
+
+  static async setAuthCookie(token: string, user: any): Promise<void> {
     (await cookies()).set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -60,10 +75,10 @@ export class AuthService {
       // 1. Parse + validate
       const parsed = registerSchema.safeParse(Object.fromEntries(formData));
       if (!parsed.success) {
-        return { 
+        return {
           errors: z.flattenError(parsed.error).fieldErrors,
           message: "Please fix the errors below.",
-          success: false 
+          success: false,
         };
       }
 
@@ -71,12 +86,14 @@ export class AuthService {
       const { token } = await this.register(parsed.data);
 
       // 3. Store token
-      await this.setAuthCookie(token);
-
+      await this.setAuthCookie(token, parsed.data);
     } catch (error) {
       console.error("Registration error:", error);
       return {
-        message: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
         success: false,
       };
     }
@@ -94,10 +111,10 @@ export class AuthService {
       // 1. Parse + validate
       const parsed = loginSchema.safeParse(Object.fromEntries(formData));
       if (!parsed.success) {
-        return { 
+        return {
           errors: z.flattenError(parsed.error).fieldErrors,
           message: "Please fix the errors below.",
-          success: false 
+          success: false,
         };
       }
 
@@ -105,13 +122,14 @@ export class AuthService {
       const { token } = await this.login(parsed.data);
 
       // 3. Store token
-      await this.setAuthCookie(token);
-
-
+      await this.setAuthCookie(token, parsed.data);
     } catch (error) {
       console.error("Login error:", error);
       return {
-        message: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
         success: false,
       };
     }

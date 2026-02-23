@@ -12,6 +12,8 @@ import {
   Search,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
@@ -138,6 +140,13 @@ const Navbar1 = ({
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await authClient.signOut();
+    router.refresh();
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -164,7 +173,6 @@ const Navbar1 = ({
     console.log("Searching for:", searchQuery);
     // Add your search logic here
   };
-
   return (
     <section
       className={cn(
@@ -209,21 +217,41 @@ const Navbar1 = ({
 
             {/* Auth Buttons */}
             <div className="flex items-center gap-2">
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                className="text-gray-700 hover:text-orange-600 hover:bg-orange-50"
-              >
-                <a href={auth.login.url}>{auth.login.title}</a>
-              </Button>
-              <Button
-                asChild
-                size="sm"
-                className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm"
-              >
-                <a href={auth.signup.url}>{auth.signup.title}</a>
-              </Button>
+              {isPending ? (
+                <div className="h-9 w-24 bg-gray-100 animate-pulse rounded-md" />
+              ) : session?.user ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700">
+                    Hi, {session.user.name?.split(" ")[0]}
+                  </span>
+                  <Button
+                    onClick={handleLogout}
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-700 hover:text-red-600 hover:bg-red-50"
+                  >
+                    Logout
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-700 hover:text-orange-600 hover:bg-orange-50"
+                  >
+                    <a href={auth.login.url}>{auth.login.title}</a>
+                  </Button>
+                  <Button
+                    asChild
+                    size="sm"
+                    className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm"
+                  >
+                    <a href={auth.signup.url}>{auth.signup.title}</a>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </nav>
@@ -297,19 +325,41 @@ const Navbar1 = ({
                     </Accordion>
 
                     <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
-                      <Button
-                        asChild
-                        variant="outline"
-                        className="border-orange-200 text-orange-600 hover:bg-orange-50"
-                      >
-                        <a href={auth.login.url}>{auth.login.title}</a>
-                      </Button>
-                      <Button
-                        asChild
-                        className="bg-orange-500 hover:bg-orange-600 text-white"
-                      >
-                        <a href={auth.signup.url}>{auth.signup.title}</a>
-                      </Button>
+                      {isPending ? (
+                        <div className="h-10 w-full bg-gray-100 animate-pulse rounded-md" />
+                      ) : session?.user ? (
+                        <>
+                          <div className="px-3 py-2 text-sm font-medium text-gray-700 border-b border-gray-50 pb-4">
+                            Logged in as{" "}
+                            <span className="text-orange-600 font-bold">
+                              {session.user.name}
+                            </span>
+                          </div>
+                          <Button
+                            onClick={handleLogout}
+                            variant="outline"
+                            className="border-red-200 text-red-600 hover:bg-red-50"
+                          >
+                            Logout
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            asChild
+                            variant="outline"
+                            className="border-orange-200 text-orange-600 hover:bg-orange-50"
+                          >
+                            <a href={auth.login.url}>{auth.login.title}</a>
+                          </Button>
+                          <Button
+                            asChild
+                            className="bg-orange-500 hover:bg-orange-600 text-white"
+                          >
+                            <a href={auth.signup.url}>{auth.signup.title}</a>
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </SheetContent>

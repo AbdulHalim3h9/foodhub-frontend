@@ -1,6 +1,6 @@
 "use server";
 
-import { AuthService } from "@/services/auth.service";
+import { AuthService } from "@/services/auth/auth.service";
 
 export type AuthState = {
   errors?: Record<string, string[]>;
@@ -10,7 +10,7 @@ export type AuthState = {
 
 export async function loginAction(
   prevState: AuthState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AuthState> {
   return AuthService.validateAndLogin(formData);
 }

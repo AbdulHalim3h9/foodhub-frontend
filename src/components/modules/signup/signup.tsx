@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/field";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
-import { signupAction } from "@/actions/auth";
+import { authClient } from "@/lib/auth-client";
 import { registerSchema } from "@/lib/validators/auth";
+import { useRouter } from "next/navigation";
 
 interface SignupProps {
   heading?: string;
@@ -29,6 +30,7 @@ export function Signup({
   loginUrl,
   className,
 }: SignupProps) {
+  const router = useRouter();
   const form = useForm({
     defaultValues: {
       name: "",
@@ -45,24 +47,29 @@ export function Signup({
       const toastId = toast.loading("Creating account...");
 
       try {
-        const formData = new FormData();
-        formData.append("name", value.name);
-        formData.append("email", value.email);
-        formData.append("phone", value.phone);
-        formData.append("address", value.address);
-        formData.append("password", value.password);
-        formData.append("confirmPassword", value.confirmPassword);
+        const { data, error } = await authClient.signUp.email({
+          email: value.email,
+          password: value.password,
+          name: value.name,
+          // Better Auth picks up additional fields based on backend config
+          // @ts-ignore
+          phone: value.phone,
+          // @ts-ignore
+          address: value.address,
+        });
 
-        const result = await signupAction({} as any, formData);
-
-        if (result.message && !result.success) {
-          toast.error(result.message, { id: toastId });
+        if (error) {
+          toast.error(error.message || "Failed to create account", {
+            id: toastId,
+          });
           return;
         }
 
         toast.success("Account created successfully!", { id: toastId });
+        router.push("/dashboard");
+        router.refresh();
       } catch (err) {
-        console.log(err)
+        console.error(err);
         toast.error("Something went wrong", { id: toastId });
       }
     },
@@ -149,9 +156,7 @@ export function Signup({
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Phone
-                      </FieldLabel>
+                      <FieldLabel htmlFor={field.name}>Phone</FieldLabel>
                       <Input
                         type="tel"
                         id={field.name}
@@ -175,9 +180,7 @@ export function Signup({
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Address
-                      </FieldLabel>
+                      <FieldLabel htmlFor={field.name}>Address</FieldLabel>
                       <Input
                         type="text"
                         id={field.name}

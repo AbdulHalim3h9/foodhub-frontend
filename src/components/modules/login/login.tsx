@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/field";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
-import { loginAction } from "@/actions/auth";
+import { authClient } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/validators/auth";
+import { useRouter } from "next/navigation";
 
 interface LoginProps {
   heading?: string;
@@ -29,6 +30,7 @@ export function Login({
   signupUrl,
   className,
 }: LoginProps) {
+  const router = useRouter();
   const form = useForm({
     defaultValues: {
       email: "",
@@ -41,24 +43,21 @@ export function Login({
       const toastId = toast.loading("Signing in...");
 
       try {
-        const formData = new FormData();
-        formData.append("email", value.email);
-        formData.append("password", value.password);
+        const { data, error } = await authClient.signIn.email({
+          email: value.email,
+          password: value.password,
+        });
 
-        const result = await loginAction({} as any, formData);
-
-        if (result.message && !result.success) {
-          toast.error(result.message, { id: toastId });
+        if (error) {
+          toast.error(error.message || "Invalid credentials", { id: toastId });
           return;
         }
 
         toast.success("Login successful!", { id: toastId });
+        router.push("/dashboard");
+        router.refresh();
       } catch (err: any) {
-        // NEXT_REDIRECT is expected behavior when server action redirects
-        if (err?.message?.includes('NEXT_REDIRECT')) {
-          return;
-        }
-        console.log(err);
+        console.error(err);
         toast.error("Something went wrong", { id: toastId });
       }
     },
