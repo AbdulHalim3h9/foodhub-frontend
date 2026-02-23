@@ -1,172 +1,162 @@
 "use client";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { useForm } from "@tanstack/react-form";
+import { toast } from "sonner";
+import { loginAction } from "@/actions/auth";
+import { loginSchema } from "@/lib/validators/auth";
 
-interface Login1Props {
+interface LoginProps {
   heading?: string;
-  subheading?: string;
-  logo?: {
-    url: string;
-    text: string;
-  };
   buttonText?: string;
   signupText?: string;
   signupUrl?: string;
-  forgotPasswordUrl?: string;
   className?: string;
 }
 
-const Login = ({
-  heading = "Welcome back",
-  subheading = "Enter your credentials to access your account",
-  logo = {
-    url: "/",
-    text: "FoodHub",
-  },
-  buttonText = "Sign in",
-  signupText = "Don't have an account?",
-  signupUrl = "/signup",
-  forgotPasswordUrl = "/forgot-password",
+export function Login({
+  heading,
+  buttonText,
+  signupText,
+  signupUrl,
   className,
-}: Login1Props) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+}: LoginProps) {
+  const form = useForm({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    validators: {
+      onSubmit: loginSchema,
+    },
+    onSubmit: async ({ value }) => {
+      const toastId = toast.loading("Signing in...");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Login:", { email, password });
-    // Add your login logic here
-  };
+      try {
+        const formData = new FormData();
+        formData.append("email", value.email);
+        formData.append("password", value.password);
+
+        const result = await loginAction({} as any, formData);
+
+        if (result.message && !result.success) {
+          toast.error(result.message, { id: toastId });
+          return;
+        }
+
+        toast.success("Login successful!", { id: toastId });
+      } catch (err: any) {
+        // NEXT_REDIRECT is expected behavior when server action redirects
+        if (err?.message?.includes('NEXT_REDIRECT')) {
+          return;
+        }
+        console.log(err);
+        toast.error("Something went wrong", { id: toastId });
+      }
+    },
+  });
 
   return (
-    <div className={cn("w-full max-w-md mx-auto", className)}>
-      {/* Logo */}
-      <div className="text-center mb-8">
-        <a href={logo.url} className="inline-block">
-          <span className="text-3xl font-bold text-primary tracking-tight">
-            {logo.text}
-          </span>
-        </a>
-      </div>
-
-      {/* Login Card */}
-      <div className="bg-card text-card-foreground rounded-xl shadow-lg border p-8">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold mb-2">{heading}</h1>
-          {subheading && (
-            <p className="text-sm text-muted-foreground">{subheading}</p>
-          )}
-        </div>
-
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email Field */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Password Field */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <a
-                href={forgotPasswordUrl}
-                className="text-xs text-primary hover:text-primary/80 font-medium"
-              >
-                Forgot password?
-              </a>
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-10"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                {showPassword ? (
-                  <EyeOff className="size-4" />
-                ) : (
-                  <Eye className="size-4" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Remember Me & Submit */}
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex items-center space-x-2">
-              <input
-                id="remember"
-                type="checkbox"
-                className="rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <label
-                htmlFor="remember"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Remember me
-              </label>
-            </div>
-            <Button type="submit" className="px-8">
-              {buttonText}
-            </Button>
-          </div>
-        </form>
-
-        {/* Sign Up Link */}
-        <div className="text-center mt-6">
-          <p className="text-sm text-muted-foreground">
-            {signupText}{" "}
-            <a
-              href={signupUrl}
-              className="font-semibold text-primary hover:text-primary/80 transition-colors"
-            >
-              Sign up
-            </a>
+    <div
+      className={cn(
+        "w-full h-full flex items-center justify-center px-8",
+        className,
+      )}
+    >
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-start mb-8">
+          <h1 className="text-3xl font-bold">{heading}</h1>
+          <p className="text-muted-foreground mt-2">
+            Enter your credentials to access your account
           </p>
         </div>
 
-        {/* Footer Note */}
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          By continuing, you agree to FoodHub's{" "}
-          <a href="/terms" className="text-primary hover:underline">
-            Terms
-          </a>{" "}
-          and{" "}
-          <a href="/privacy" className="text-primary hover:underline">
-            Privacy Policy
-          </a>
-        </p>
+        <form
+          id="login-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+        >
+          <FieldGroup>
+            <form.Field
+              name="email"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                    <Input
+                      type="email"
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="m@example.com"
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                );
+              }}
+            />
+
+            <form.Field
+              name="password"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                    <Input
+                      type="password"
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Enter your password"
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                );
+              }}
+            />
+          </FieldGroup>
+        </form>
+
+        <div className="flex flex-col gap-4 mt-8">
+          <Button
+            type="submit"
+            form="login-form"
+            disabled={!form.state.canSubmit || form.state.isSubmitting}
+            className="w-full"
+          >
+            {form.state.isSubmitting ? "Signing In..." : buttonText}
+          </Button>
+          <div className="flex justify-center gap-1 text-sm text-muted-foreground">
+            <p>{signupText}</p>
+            <a
+              href={signupUrl}
+              className="font-medium text-primary hover:underline"
+            >
+              Sign Up
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   );
-};
-
-export { Login };
+}
