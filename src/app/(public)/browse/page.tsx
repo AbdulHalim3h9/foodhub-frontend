@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { getMeals } from "@/actions/menu.action";
 import { getCategories } from "@/actions/category.action";
+import { getCuisines } from "@/actions/cuisine.action";
 import { Meal } from "@/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FilterSidebar } from "@/components/browse/FilterSidebar";
@@ -24,12 +25,18 @@ interface Category {
   image?: string;
 }
 
+interface Cuisine {
+  id: string;
+  name: string;
+}
+
 export default function BrowsePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [meals, setMeals] = useState<Meal[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [cuisines, setCuisines] = useState<Cuisine[]>([]);
 
   // Initialize states from URL
   const initialCategory = searchParams.get("category");
@@ -47,44 +54,40 @@ export default function BrowsePage() {
     searchParams.get("search") || "",
   );
   const [totalMeals, setTotalMeals] = useState(0);
-
+  // console.log(totalMeals, "totalMeals");
   // Additional filter states (initialized from URL)
   const [selectedCuisine, setSelectedCuisine] = useState(
     searchParams.get("cuisine") || "all",
   );
-  const [isVegan, setIsVegan] = useState(
-    searchParams.get("isVegan") === "true",
-  );
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
-  const [isAvailable, setIsAvailable] = useState(
-    searchParams.get("isAvailable") !== "false",
-  );
 
-  // Fetch categories on mount
+  // Fetch categories and cuisines on mount
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchInitialData = async () => {
       try {
-        const result = await getCategories({});
-        console.log("Categories API result:", result);
-        if (result.success && result.data) {
-          console.log("Categories data:", result.data);
-          // Categories API returns { data: [...] } directly
-          setCategories(result.data.data || []);
-          console.log("Set categories to:", result.data.data);
-        } else {
-          console.error("Failed to fetch categories:", result.error);
+        const [categoriesResult, cuisinesResult] = await Promise.all([
+          getCategories({}),
+          getCuisines({}),
+        ]);
+
+        if (categoriesResult.success && categoriesResult.data) {
+          setCategories(categoriesResult.data.data || []);
+        }
+
+        if (cuisinesResult.success && cuisinesResult.data) {
+          setCuisines(cuisinesResult.data.data || []);
         }
       } catch (error) {
-        console.error("Failed to fetch categories:", error);
+        console.error("Failed to fetch initial data:", error);
       }
     };
-    fetchCategories();
+    fetchInitialData();
   }, []);
 
-  // Fetch meals whenever filters change
+  // Fetch meals when filters change
   useEffect(() => {
-    const fetchMeals = async () => {
+    const fetchMealsData = async () => {
       setLoading(true);
       try {
         const queryParams: any = {
@@ -92,42 +95,19 @@ export default function BrowsePage() {
           page: "1",
         };
 
-        // Add search term
         if (searchTerm) queryParams.search = searchTerm;
-
-        // Add selected categories (multiple) - backend needs categoryId for single, but we can send comma-separated for multiple
         if (selectedCategories.length > 0) {
           queryParams.categoryIds = selectedCategories.join(",");
         }
-
-        // Add other filters
         if (selectedCuisine && selectedCuisine !== "all")
           queryParams.cuisine = selectedCuisine;
-        if (isVegan) queryParams.isVegan = true;
         if (minPrice) queryParams.minPrice = minPrice;
         if (maxPrice) queryParams.maxPrice = maxPrice;
-        if (isAvailable) queryParams.isAvailable = true;
-
-        // Add URL params for persistence via router.replace
-        const urlParams = new URLSearchParams();
-        if (searchTerm) urlParams.set("search", searchTerm);
-        if (selectedCategories.length > 0)
-          urlParams.set("categories", selectedCategories.join(","));
-        if (selectedCuisine && selectedCuisine !== "all")
-          urlParams.set("cuisine", selectedCuisine);
-        if (isVegan) urlParams.set("isVegan", "true");
-        if (minPrice) urlParams.set("minPrice", minPrice);
-        if (maxPrice) urlParams.set("maxPrice", maxPrice);
-        if (!isAvailable) urlParams.set("isAvailable", "false");
-
-        router.replace(`/browse?${urlParams.toString()}`, { scroll: false });
 
         const result = await getMeals(queryParams);
         if (result.success && result.data) {
           setMeals(result.data.data?.data || []);
           setTotalMeals(result.data.data?.total || 0);
-        } else {
-          console.error("Failed to fetch meals:", result.error);
         }
       } catch (error) {
         console.error("Failed to fetch meals:", error);
@@ -136,17 +116,49 @@ export default function BrowsePage() {
       }
     };
 
-    fetchMeals();
-  }, [
-    searchTerm,
-    selectedCategories,
-    selectedCuisine,
-    isVegan,
-    minPrice,
-    maxPrice,
-    isAvailable,
-    router,
-  ]);
+    fetchMealsData();
+  }, [searchTerm, selectedCategories, selectedCuisine, minPrice, maxPrice]);
+
+  // Sync URL with state (one-way sync State -> URL)
+  useEffect(() => {
+    const urlParams = new URLSearchParams();
+    if (searchTerm) urlParams.set("search", searchTerm);
+    if (selectedCategories.length > 0)
+      urlParams.set("categories", selectedCategories.join(","));
+    if (selectedCuisine && selectedCuisine !== "all")
+      urlParams.set("cuisine", selectedCuisine);
+    if (minPrice) urlParams.set("minPrice", minPrice);
+    if (maxPrice) urlParams.set("maxPrice", maxPrice);
+
+    const newSearch = urlParams.toString();
+    const currentSearch = searchParams.toString();
+
+    // Use a string comparison to avoid loops while still keeping persistence
+    if (newSearch !== currentSearch) {
+      router.replace(`/browse${newSearch ? "?" + newSearch : ""}`, {
+        scroll: false,
+      });
+    }
+  }, [searchTerm, selectedCategories, selectedCuisine, minPrice, maxPrice]);
+
+  // Sync State from URL (for back button or manual URL change)
+  useEffect(() => {
+    const currentCategories = searchParams.get("categories")?.split(",") || [];
+    const currentSearch = searchParams.get("search") || "";
+    const currentCuisine = searchParams.get("cuisine") || "all";
+    const currentMinPrice = searchParams.get("minPrice") || "";
+    const currentMaxPrice = searchParams.get("maxPrice") || "";
+
+    // Update only if different from current state to avoid unnecessary re-renders
+    if (
+      JSON.stringify(currentCategories) !== JSON.stringify(selectedCategories)
+    )
+      setSelectedCategories(currentCategories);
+    if (currentSearch !== searchTerm) setSearchTerm(currentSearch);
+    if (currentCuisine !== selectedCuisine) setSelectedCuisine(currentCuisine);
+    if (currentMinPrice !== minPrice) setMinPrice(currentMinPrice);
+    if (currentMaxPrice !== maxPrice) setMaxPrice(currentMaxPrice);
+  }, [searchParams]);
 
   const handleCategoryToggle = (categoryId: string) => {
     setSelectedCategories((prev) => {
@@ -163,13 +175,13 @@ export default function BrowsePage() {
   };
 
   const clearFilters = () => {
+    // Clear all states
     setSelectedCategories([]);
     setSearchTerm("");
     setSelectedCuisine("all");
-    setIsVegan(false);
     setMinPrice("");
     setMaxPrice("");
-    setIsAvailable(true);
+    // Just push the clean URL
     router.push("/browse");
   };
 
@@ -203,18 +215,15 @@ export default function BrowsePage() {
           {/* Desktop Sidebar */}
           <FilterSidebar
             categories={categories}
+            cuisines={cuisines}
             selectedCategories={selectedCategories}
             onCategoryToggle={handleCategoryToggle}
             selectedCuisine={selectedCuisine}
             onCuisineChange={setSelectedCuisine}
-            isVegan={isVegan}
-            onVeganChange={setIsVegan}
             minPrice={minPrice}
             onMinPriceChange={setMinPrice}
             maxPrice={maxPrice}
             onMaxPriceChange={setMaxPrice}
-            isAvailable={isAvailable}
-            onAvailableChange={setIsAvailable}
             onClearFilters={clearFilters}
           />
 

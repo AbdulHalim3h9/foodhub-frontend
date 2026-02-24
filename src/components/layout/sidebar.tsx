@@ -1,3 +1,6 @@
+"use client";
+
+import * as React from "react";
 import {
   BarChart3,
   ClipboardList,
@@ -9,17 +12,30 @@ import {
   Store,
   TrendingUp,
   FileText,
-  Shield,
-  Package,
-  ChefHat,
-  Menu,
-  X,
-  MapPin,
   Star,
+  MapPin,
+  Menu,
+  SquareTerminal,
+  LogOut,
+  User,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -29,266 +45,189 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
-type NavItem = {
-  label: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  href: string;
-  isActive?: boolean;
-};
+// Navigation Data grouped by Role
 
-type NavGroup = {
-  title: string;
-  items: NavItem[];
-};
+const ADMIN_navMain = [
+  {
+    title: "Main Dashboard",
+    icon: LayoutDashboard,
+    items: [
+      { title: "Overview", url: "/dashboard" },
+      { title: "Providers", url: "/dashboard/providers" },
+      { title: "Users", url: "/dashboard/users" },
+      { title: "Settings", url: "/dashboard/settings" },
+      { title: "Analytics", url: "/dashboard/analytics" },
+    ],
+  },
+  {
+    title: "Analytics & Finance",
+    icon: BarChart3,
+    items: [
+      { title: "Reports", url: "/admin/reports" },
+      { title: "Transactions", url: "/admin/transactions" },
+    ],
+  },
+];
 
-type SidebarData = {
-  logo: {
-    src: string;
-    alt: string;
-    title: string;
-    description: string;
-  };
-  navGroups: NavGroup[];
-  footerGroup: NavGroup;
-  type: "admin" | "provider" | "customer";
-};
+const PROVIDER_navMain = [
+  {
+    title: "Store Overview",
+    icon: Store,
+    items: [
+      { title: "Dashboard", url: "/dashboard" },
+      { title: "Analytics", url: "/dashboard/analytics" },
+      { title: "Menu Items", url: "/dashboard/menu" },
+      { title: "Orders", url: "/dashboard/orders" },
+      { title: "Profile", url: "/dashboard/profile" },
+      { title: "Settings", url: "/dashboard/settings" },
+    ],
+  },
+];
 
-const getSidebarData = (
-  type: "admin" | "provider" | "customer",
-): SidebarData => {
-  const commonLogo = {
-    src: "https://deifkwefumgah.cloudfront.net/foodhub/block/logos/foodhub-wordmark.svg",
-    alt: "FoodHub",
-    title: "FoodHub",
-    description:
-      type === "admin"
-        ? "Admin Panel"
-        : type === "provider"
-          ? "Provider Portal"
-          : "Customer Hub",
-  };
+const CUSTOMER_navMain = [
+  {
+    title: "My FoodHub",
+    icon: ShoppingCart,
+    items: [
+      //dashboard
+      { title: "Dashboard", url: "/dashboard" },
+      { title: "Cart", url: "/dashboard/cart" },
+      { title: "Order History", url: "/dashboard/orders" },
+      //settings
+      { title: "Profile", url: "/dashboard/profile" },
+      { title: "Settings", url: "/dashboard/settings" },
+      //profile
+    ],
+  },
+];
 
-  if (type === "admin") {
-    return {
-      logo: commonLogo,
-      navGroups: [
-        {
-          title: "Main",
-          items: [
-            {
-              label: "Dashboard",
-              icon: LayoutDashboard,
-              href: "/admin",
-              isActive: true,
-            },
-            { label: "Providers", icon: Store, href: "/admin/providers" },
-            { label: "Users", icon: Users, href: "/admin/users" },
-          ],
-        },
-        {
-          title: "Analytics",
-          items: [
-            { label: "Reports", icon: BarChart3, href: "/admin/reports" },
-            {
-              label: "Transactions",
-              icon: FileText,
-              href: "/admin/transactions",
-            },
-          ],
-        },
-      ],
-      footerGroup: {
-        title: "System",
-        items: [
-          { label: "Settings", icon: Settings, href: "/admin/settings" },
-          { label: "Support", icon: HelpCircle, href: "/admin/help" },
-        ],
-      },
-      type: "admin",
-    };
-  } else if (type === "provider") {
-    return {
-      logo: commonLogo,
-      navGroups: [
-        {
-          title: "Overview",
-          items: [
-            {
-              label: "Dashboard",
-              icon: LayoutDashboard,
-              href: "/provider/dashboard",
-              isActive: true,
-            },
-            { label: "Orders", icon: ShoppingCart, href: "/provider/orders" },
-            { label: "Menu Items", icon: Menu, href: "/provider/menu" },
-          ],
-        },
-        {
-          title: "Performance",
-          items: [
-            {
-              label: "Analytics",
-              icon: TrendingUp,
-              href: "/provider/analytics",
-            },
-            { label: "Reviews", icon: Star, href: "/provider/reviews" },
-          ],
-        },
-      ],
-      footerGroup: {
-        title: "Account",
-        items: [
-          { label: "Settings", icon: Settings, href: "/provider/settings" },
-          { label: "Help", icon: HelpCircle, href: "/provider/help" },
-        ],
-      },
-      type: "provider",
-    };
-  } else {
-    // Customer
-    return {
-      logo: commonLogo,
-      navGroups: [
-        {
-          title: "My FoodHub",
-          items: [
-            { label: "Browse", icon: Store, href: "/browse", isActive: true },
-            {
-              label: "My Orders",
-              icon: ShoppingCart,
-              href: "/customer/orders",
-            },
-            { label: "Favorites", icon: Star, href: "/customer/favorites" },
-          ],
-        },
-        {
-          title: "Account",
-          items: [
-            { label: "Profile", icon: Users, href: "/customer/profile" },
-            { label: "Addresses", icon: MapPin, href: "/customer/addresses" },
-          ],
-        },
-      ],
-      footerGroup: {
-        title: "Support",
-        items: [
-          { label: "Help Center", icon: HelpCircle, href: "/help" },
-          { label: "Settings", icon: Settings, href: "/customer/settings" },
-        ],
-      },
-      type: "customer",
-    };
-  }
-};
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  userRole: "ADMIN" | "PROVIDER" | "CUSTOMER";
+}
 
-const SidebarLogo = ({ logo }: { logo: SidebarData["logo"] }) => {
+// Simple NavMain component to render the grouped items
+function NavMain({ items }: { items: any[] }) {
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton size="lg">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-sm bg-primary">
-            <img
-              src={logo.src}
-              alt={logo.alt}
-              className="size-6 text-primary-foreground invert dark:invert-0"
-            />
-          </div>
-          <div className="flex flex-col gap-0.5 leading-none">
-            <span className="font-medium">{logo.title}</span>
-            <span className="text-xs text-muted-foreground">
-              {logo.description}
-            </span>
-          </div>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  );
-};
-
-const AppSidebar = ({
-  type = "provider",
-  ...props
-}: React.ComponentProps<typeof Sidebar> & {
-  type?: "admin" | "provider" | "customer";
-}) => {
-  const sidebarData = getSidebarData(type);
-  return (
-    <Sidebar {...props}>
-      <SidebarHeader>
-        <SidebarLogo logo={sidebarData.logo} />
-      </SidebarHeader>
-      <SidebarContent>
-        {sidebarData.navGroups.map((group) => (
-          <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton asChild isActive={item.isActive}>
-                      <a href={item.href}>{item.label}</a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
-      <SidebarFooter>
-        <SidebarGroup>
-          <SidebarGroupLabel>{sidebarData.footerGroup.title}</SidebarGroupLabel>
+    <>
+      {items.map((group) => (
+        <SidebarGroup key={group.title}>
+          <SidebarGroupLabel className="flex items-center gap-2">
+            {group.icon && <group.icon className="h-4 w-4" />}
+            {group.title}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {sidebarData.footerGroup.items.map((item) => (
-                <SidebarMenuItem key={item.label}>
+              {group.items.map((item: any) => (
+                <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.href}>{item.label}</a>
+                    <a href={item.url} className="flex items-center gap-2">
+                      <span>{item.title}</span>
+                    </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+      ))}
+    </>
+  );
+}
+
+export function AppSidebar({ userRole, ...props }: AppSidebarProps) {
+  let navItems = null;
+  if (userRole === "ADMIN") {
+    navItems = ADMIN_navMain;
+  } else if (userRole === "PROVIDER") {
+    navItems = PROVIDER_navMain;
+  } else {
+    navItems = CUSTOMER_navMain;
+  }
+
+  return (
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <a href="/">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-orange-500 text-white">
+                  <Store className="size-5" />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="font-bold text-lg">FoodHub</span>
+                  <span className="text-xs text-muted-foreground capitalize">
+                    {userRole.toLowerCase()} Panel
+                  </span>
+                </div>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        <NavMain items={navItems} />
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <a
+                  href={
+                    userRole === "ADMIN"
+                      ? "/admin/settings"
+                      : "/customer/settings"
+                  }
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <a href="/help">
+                  <HelpCircle className="h-4 w-4" />
+                  <span>Help Center</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                <LogOut className="h-4 w-4" />
+                <span>Logout</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
-};
+}
 
 interface Sidebar1Props {
   className?: string;
-  type?: "admin" | "provider" | "customer";
+  type?: "ADMIN" | "PROVIDER" | "CUSTOMER" | "admin" | "provider" | "customer";
   children?: React.ReactNode;
 }
 
 const Sidebar1 = ({
   className,
-  type = "provider",
+  type = "PROVIDER",
   children,
 }: Sidebar1Props) => {
+  // Normalize type to uppercase to handle existing layouts
+  const role = type.toUpperCase() as "ADMIN" | "PROVIDER" | "CUSTOMER";
+
   return (
     <SidebarProvider className={cn(className)}>
-      <AppSidebar type={type} />
+      <AppSidebar userRole={role} />
       <SidebarInset className="overflow-x-hidden">
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <SidebarTrigger className="-ml-1" />
           <Separator
             orientation="vertical"
@@ -297,7 +236,9 @@ const Sidebar1 = ({
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="#">Overview</BreadcrumbLink>
+                <BreadcrumbLink href="#">
+                  {role.charAt(0) + role.slice(1).toLowerCase()} Portal
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>

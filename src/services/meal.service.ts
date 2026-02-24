@@ -21,8 +21,6 @@ interface GetMealsParams {
   categoryIds?: string; // For multiple categories (comma-separated)
   providerId?: string;
   cuisine?: string;
-  isVegan?: boolean;
-  isAvailable?: boolean;
 }
 
 export interface MealData {
@@ -34,7 +32,6 @@ export interface MealData {
   allergens?: string;
   prepTime?: number;
   cuisine?: string;
-  isVegan?: boolean;
   isFeatured?: boolean;
   categoryId: string;
 }

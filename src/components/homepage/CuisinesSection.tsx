@@ -1,19 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
 
-interface Category {
+interface Cuisine {
   id: string;
   name: string;
-  description?: string;
-  image?: string;
 }
 
-interface CategoriesSectionProps {
-  categories: Category[];
+interface CuisinesSectionProps {
+  cuisines: Cuisine[];
 }
 
-export function CategoriesSection({ categories }: CategoriesSectionProps) {
-  if (!categories?.length) return null;
+export function CuisinesSection({ cuisines }: CuisinesSectionProps) {
+  if (!cuisines?.length) return null;
 
   return (
     <section className="bg-white py-12">
@@ -21,10 +19,10 @@ export function CategoriesSection({ categories }: CategoriesSectionProps) {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
-              Popular Categories
+              Explore Cuisines
             </h2>
             <p className="text-gray-500 mt-1 text-sm md:text-base">
-              Explore your favorite food categories
+              Find exactly what you're craving
             </p>
           </div>
           <Link
@@ -36,7 +34,7 @@ export function CategoriesSection({ categories }: CategoriesSectionProps) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {categories.slice(0, 6).map((category, index) => {
+          {cuisines.slice(0, 6).map((cuisine, index) => {
             const colors = [
               "bg-red-50 text-red-600",
               "bg-orange-50 text-orange-600",
@@ -49,28 +47,17 @@ export function CategoriesSection({ categories }: CategoriesSectionProps) {
 
             return (
               <Link
-                key={category.id}
-                href={`/browse?category=${category.id}`}
+                key={cuisine.id}
+                href={`/browse?cuisine=${cuisine.name}`}
                 className="group flex flex-col items-center justify-center p-5 rounded-2xl bg-gray-50 hover:bg-white border border-transparent hover:border-gray-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
               >
-                {category.image ? (
-                  <div className="relative w-16 h-16 mb-4 rounded-full overflow-hidden shadow-sm group-hover:scale-110 transition-transform duration-300">
-                    <Image
-                      src={category.image}
-                      alt={category.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className={`w-16 h-16 flex items-center justify-center rounded-full mb-4 text-3xl ${colors[index % colors.length]} group-hover:scale-110 transition-transform duration-300 shadow-sm`}
-                  >
-                    {icons[index % icons.length]}
-                  </div>
-                )}
+                <div
+                  className={`w-16 h-16 flex items-center justify-center rounded-full mb-4 text-3xl ${colors[index % colors.length]} group-hover:scale-110 transition-transform duration-300 shadow-sm`}
+                >
+                  {icons[index % icons.length]}
+                </div>
                 <h3 className="font-semibold text-gray-900 text-center text-sm md:text-base mt-2 group-hover:text-orange-600 transition-colors">
-                  {category.name}
+                  {cuisine.name}
                 </h3>
               </Link>
             );

@@ -16,37 +16,36 @@ interface Category {
   name: string;
 }
 
+interface Cuisine {
+  id: string;
+  name: string;
+}
+
 interface FilterSidebarProps {
   categories: Category[];
+  cuisines: Cuisine[];
   selectedCategories: string[];
   onCategoryToggle: (categoryId: string) => void;
   selectedCuisine: string;
   onCuisineChange: (cuisine: string) => void;
-  isVegan: boolean;
-  onVeganChange: (isVegan: boolean) => void;
   minPrice: string;
   onMinPriceChange: (price: string) => void;
   maxPrice: string;
   onMaxPriceChange: (price: string) => void;
-  isAvailable: boolean;
-  onAvailableChange: (isAvailable: boolean) => void;
   onClearFilters: () => void;
 }
 
 export function FilterSidebar({
   categories,
+  cuisines,
   selectedCategories,
   onCategoryToggle,
   selectedCuisine,
   onCuisineChange,
-  isVegan,
-  onVeganChange,
   minPrice,
   onMinPriceChange,
   maxPrice,
   onMaxPriceChange,
-  isAvailable,
-  onAvailableChange,
   onClearFilters,
 }: FilterSidebarProps) {
   return (
@@ -105,14 +104,11 @@ export function FilterSidebar({
             </SelectTrigger>
             <SelectContent className="rounded-xl border-gray-100 shadow-xl">
               <SelectItem value="all">All Cuisines</SelectItem>
-              <SelectItem value="Italian">Italian</SelectItem>
-              <SelectItem value="Chinese">Chinese</SelectItem>
-              <SelectItem value="Indian">Indian</SelectItem>
-              <SelectItem value="Mexican">Mexican</SelectItem>
-              <SelectItem value="Japanese">Japanese</SelectItem>
-              <SelectItem value="American">American</SelectItem>
-              <SelectItem value="Thai">Thai</SelectItem>
-              <SelectItem value="Mediterranean">Mediterranean</SelectItem>
+              {cuisines.map((cuisine) => (
+                <SelectItem key={cuisine.id} value={cuisine.name}>
+                  {cuisine.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -150,47 +146,6 @@ export function FilterSidebar({
                 className="pl-7 bg-gray-50 border-gray-200 focus:border-orange-500 focus:ring-orange-500 rounded-xl h-11 no-spinners"
               />
             </div>
-          </div>
-        </div>
-
-        <Separator className="bg-gray-100" />
-
-        {/* Dietary & Availability */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-gray-900 mb-4">
-            Dietary & More
-          </h4>
-
-          <div className="flex items-center space-x-3 group cursor-pointer">
-            <Checkbox
-              id="vegan-filter"
-              checked={isVegan}
-              onCheckedChange={(checked) => onVeganChange(checked as boolean)}
-              className="border-gray-300 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 rounded-sm"
-            />
-            <label
-              htmlFor="vegan-filter"
-              className="text-sm font-medium text-gray-600 group-hover:text-gray-900 leading-none cursor-pointer select-none transition-colors"
-            >
-              Vegan Only 🌱
-            </label>
-          </div>
-
-          <div className="flex items-center space-x-3 group cursor-pointer">
-            <Checkbox
-              id="available-filter"
-              checked={isAvailable}
-              onCheckedChange={(checked) =>
-                onAvailableChange(checked as boolean)
-              }
-              className="border-gray-300 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 rounded-sm"
-            />
-            <label
-              htmlFor="available-filter"
-              className="text-sm font-medium text-gray-600 group-hover:text-gray-900 leading-none cursor-pointer select-none transition-colors"
-            >
-              Available Now
-            </label>
           </div>
         </div>
       </div>
