@@ -1,18 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Users,
   Package,
   ShoppingCart,
-  DollarSign,
   Star,
-  CheckCircle,
-  AlertTriangle,
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  Eye,
   ArrowUpRight,
   ArrowDownRight,
-  Eye,
-  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,52 +37,72 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-
-// Mock data
-const recentOrders = [
-  {
-    id: "ORD-001",
-    customer: "John Doe",
-    provider: "Mario's Pizza",
-    amount: 45.99,
-    status: "delivered",
-    date: "2024-02-15",
-  },
-  {
-    id: "ORD-002",
-    customer: "Jane Smith",
-    provider: "Bangkok Kitchen",
-    amount: 32.5,
-    status: "preparing",
-    date: "2024-02-16",
-  },
-  {
-    id: "ORD-003",
-    customer: "Bob Johnson",
-    provider: "Burger House",
-    amount: 28.75,
-    status: "out-for-delivery",
-    date: "2024-02-17",
-  },
-  {
-    id: "ORD-004",
-    customer: "Alice Brown",
-    provider: "Green Garden",
-    amount: 15.5,
-    status: "pending",
-    date: "2024-02-18",
-  },
-];
-
-const topProviders = [
-  { name: "Mario's Pizza", orders: 245, revenue: 4850, rating: 4.8 },
-  { name: "Bangkok Kitchen", orders: 189, revenue: 3200, rating: 4.7 },
-  { name: "Burger House", orders: 312, revenue: 5200, rating: 4.5 },
-  { name: "Green Garden", orders: 156, revenue: 2100, rating: 4.2 },
-];
+import { getDashboardStats } from "@/actions/dashboard.action";
+import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 export default function AdminDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("30days");
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const result = await getDashboardStats();
+        if (result.success) {
+          setStats(result.data);
+        } else {
+          setError(result.error || "Failed to fetch dashboard data");
+        }
+      } catch (err) {
+        setError("An unexpected error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-6 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-3 w-20" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="flex flex-col gap-6 p-6">
+        <div className="text-center py-12">
+          <p className="text-red-600">{error || "Failed to load dashboard data"}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -116,35 +135,27 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KPICard
-          title="Total Revenue"
-          value="$15,350"
-          change="+20.1%"
-          icon={<DollarSign className="size-4 text-orange-100" />}
-          colorClass="bg-gradient-to-br from-orange-500 to-orange-600 text-white"
-          trend="up"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <KPICard
           title="Total Orders"
-          value="565"
-          change="+15.3%"
+          value={stats.totalOrders.toLocaleString()}
+          change="All time"
           icon={<ShoppingCart className="size-4 text-blue-100" />}
           colorClass="bg-gradient-to-br from-blue-500 to-blue-600 text-white"
           trend="up"
         />
         <KPICard
           title="Active Users"
-          value="1,234"
-          change="+8.7%"
+          value={stats.activeUsers.toLocaleString()}
+          change={`${stats.userStats.CUSTOMER || 0} customers, ${stats.userStats.PROVIDER || 0} providers`}
           icon={<Users className="size-4 text-green-100" />}
           colorClass="bg-gradient-to-br from-green-500 to-green-600 text-white"
           trend="up"
         />
         <KPICard
           title="Active Providers"
-          value="16"
-          change="+2 new"
+          value={stats.activeProviders.toLocaleString()}
+          change="Business partners"
           icon={<Package className="size-4 text-purple-100" />}
           colorClass="bg-gradient-to-br from-purple-500 to-purple-600 text-white"
           trend="up"
@@ -159,9 +170,11 @@ export default function AdminDashboard() {
               <CardTitle>Recent Orders</CardTitle>
               <CardDescription>Latest transactions from users.</CardDescription>
             </div>
-            <Button variant="outline" size="sm" className="text-xs">
-              View All
-            </Button>
+            <Link href="/dashboard/orders">
+              <Button variant="outline" size="sm" className="text-xs">
+                View All
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent>
             <Table>
@@ -175,13 +188,13 @@ export default function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentOrders.map((order) => (
+                {stats.recentOrders.map((order: any) => (
                   <TableRow key={order.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.customer}</TableCell>
-                    <TableCell>{order.provider}</TableCell>
+                    <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                    <TableCell>{order.customer.name}</TableCell>
+                    <TableCell>{order.provider.businessName}</TableCell>
                     <TableCell className="font-medium">
-                      ${order.amount.toFixed(2)}
+                      ${Number(order.totalAmount).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={order.status} />
@@ -198,12 +211,12 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle>Top Providers</CardTitle>
             <CardDescription>
-              Highest revenue generating partners.
+              Highest order count partners.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {topProviders.map((provider, index) => (
+              {stats.topProviders.map((provider: any, index: number) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center size-8 rounded-full bg-orange-100 text-orange-600 text-xs font-bold ring-2 ring-white">
@@ -212,65 +225,20 @@ export default function AdminDashboard() {
                     <div>
                       <p className="font-medium text-sm">{provider.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {provider.orders} orders
+                        {provider.orderCount} orders
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-sm">
-                      ${provider.revenue.toLocaleString()}
+                      ${provider.totalRevenue.toFixed(0)}
                     </p>
-                    <div className="flex items-center justify-end gap-1">
-                      <Star className="size-3 text-yellow-500 fill-yellow-500" />
-                      <span className="text-xs text-muted-foreground">
-                        {provider.rating}
-                      </span>
-                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Revenue
+                    </p>
                   </div>
                 </div>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Activity Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-3 border-none shadow-md">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest system events and alerts.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <ActivityItem
-                icon={<CheckCircle className="text-green-600" />}
-                bg="bg-green-100"
-                title="New order placed"
-                desc="Order #ORD-004 from Alice"
-                time="2 min ago"
-              />
-              <ActivityItem
-                icon={<Users className="text-blue-600" />}
-                bg="bg-blue-100"
-                title="New provider registered"
-                desc="Healthy Bites joined"
-                time="1 hour ago"
-              />
-              <ActivityItem
-                icon={<Star className="text-orange-600" />}
-                bg="bg-orange-100"
-                title="New review received"
-                desc="5-star for Mario's Pizza"
-                time="3 hours ago"
-              />
-              <ActivityItem
-                icon={<AlertTriangle className="text-red-600" />}
-                bg="bg-red-100"
-                title="Payment issue"
-                desc="Order #ORD-002 failed"
-                time="5 hours ago"
-              />
             </div>
           </CardContent>
         </Card>
@@ -305,13 +273,17 @@ function KPICard({ title, value, change, icon, colorClass, trend }: any) {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    delivered:
+    DELIVERED:
       "bg-green-100 text-green-700 hover:bg-green-100 border-green-200",
-    preparing: "bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200",
-    "out-for-delivery":
+    PREPARING: "bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200",
+    OUT_FOR_DELIVERY:
       "bg-purple-100 text-purple-700 hover:bg-purple-100 border-purple-200",
-    pending:
+    PENDING:
       "bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200",
+    CONFIRMED:
+      "bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200",
+    CANCELLED:
+      "bg-red-100 text-red-700 hover:bg-red-100 border-red-200",
   };
 
   return (
@@ -319,20 +291,7 @@ function StatusBadge({ status }: { status: string }) {
       variant="outline"
       className={`${styles[status] || "bg-gray-100"} font-normal capitalize`}
     >
-      {status.replace("-", " ")}
+      {status.replace(/_/g, " ")}
     </Badge>
-  );
-}
-
-function ActivityItem({ icon, bg, title, desc, time }: any) {
-  return (
-    <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-      <div className={`p-2 rounded-full ${bg} mt-0.5`}>{icon}</div>
-      <div>
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground">{desc}</p>
-        <p className="text-[10px] text-muted-foreground mt-1">{time}</p>
-      </div>
-    </div>
   );
 }

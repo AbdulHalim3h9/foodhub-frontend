@@ -57,16 +57,7 @@ const ADMIN_navMain = [
       { title: "Overview", url: "/dashboard" },
       { title: "Providers", url: "/dashboard/providers" },
       { title: "Users", url: "/dashboard/users" },
-      { title: "Settings", url: "/dashboard/settings" },
-      { title: "Analytics", url: "/dashboard/analytics" },
-    ],
-  },
-  {
-    title: "Analytics & Finance",
-    icon: BarChart3,
-    items: [
-      { title: "Reports", url: "/admin/reports" },
-      { title: "Transactions", url: "/admin/transactions" },
+      { title: "Orders", url: "/dashboard/orders" },
     ],
   },
 ];
@@ -173,28 +164,6 @@ export function AppSidebar({ userRole, ...props }: AppSidebarProps) {
       <SidebarFooter>
         <SidebarGroup>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a
-                  href={
-                    userRole === "ADMIN"
-                      ? "/admin/settings"
-                      : "/customer/settings"
-                  }
-                >
-                  <Settings className="h-4 w-4" />
-                  <span>Settings</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="/help">
-                  <HelpCircle className="h-4 w-4" />
-                  <span>Help Center</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton className="text-red-500 hover:text-red-600 hover:bg-red-50">
                 <LogOut className="h-4 w-4" />
