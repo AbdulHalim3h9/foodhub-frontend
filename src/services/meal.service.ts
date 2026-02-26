@@ -1,18 +1,23 @@
 import { env } from "../../env";
 import { cookies } from "next/headers";
+import { Meal } from "@/types";
 
 const API_URL = env.API_URL;
 
-//* No Dynamic and No { cache: no-store } : SSG -> Static Page
-//* { cache: no-store } : SSR -> Dynamic Page
-//* next: { revalidate: 10 } : ISR -> Mix between static and dynamic
-
-interface ServiceOptions {
-  cache?: RequestCache;
-  revalidate?: number;
+export interface MealData {
+  name: string;
+  description?: string;
+  price: number;
+  image?: string;
+  ingredients?: string;
+  allergens?: string;
+  prepTime?: number;
+  cuisineId?: string;
+  isFeatured?: boolean;
+  categoryId: string;
 }
 
-interface GetMealsParams {
+export interface GetMealsParams {
   isFeatured?: boolean;
   search?: string;
   page?: string;
@@ -23,23 +28,41 @@ interface GetMealsParams {
   cuisine?: string;
 }
 
-export interface MealData {
-  name: string;
-  description?: string;
-  price: number;
-  image?: string;
-  ingredients?: string;
-  allergens?: string;
-  prepTime?: number;
-  cuisine?: string;
-  isFeatured?: boolean;
-  categoryId: string;
+export interface GetMealByIdParams {
+  id: string;
 }
 
-export const mealService = {
-  getMeals: async function (params?: GetMealsParams, options?: ServiceOptions) {
+export interface ServiceOptions {
+  revalidate?: number;
+  tags?: string[];
+}
+
+export interface PaginatedMeals {
+  data: Meal[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+class MealService {
+  private baseUrl: string;
+
+  constructor() {
+    this.baseUrl = `${API_URL}/meals`;
+  }
+
+  async getMeals(params?: GetMealsParams, options?: ServiceOptions): Promise<{ data: PaginatedMeals | Meal[] | null; error: { message: string } | null }> {
     try {
-      const url = new URL(`${API_URL}/meals`);
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
+
+      const url = new URL(`${this.baseUrl}`);
 
       if (params) {
         Object.entries(params).forEach(([key, value]) => {
@@ -49,148 +72,214 @@ export const mealService = {
         });
       }
 
-      const config: RequestInit = {};
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        },
+        next: {
+          revalidate: options?.revalidate ?? 60,
+          tags: options?.tags ?? ["meals"],
+        },
+      });
 
-      if (options?.cache) {
-        config.cache = options.cache;
+      if (!response.ok) {
+        return { 
+          data: null, 
+          error: { message: `Failed to fetch meals: ${response.statusText}` } 
+        };
       }
 
-      if (options?.revalidate) {
-        config.next = { revalidate: options.revalidate };
-      }
-
-      config.next = { ...config.next, tags: ["meals"] };
-
-      const res = await fetch(url.toString(), config);
-
-      const data = await res.json();
-
-      return { data: data, error: null };
-    } catch (err) {
-      return { data: null, error: { message: "Something Went Wrong" } };
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
     }
-  },
+  }
 
-  getMealById: async function (id: string) {
+  async getMealById(
+    params: GetMealByIdParams,
+    options?: ServiceOptions,
+  ): Promise<{ data: Meal | null; error: { message: string } | null }> {
     try {
-      const res = await fetch(`${API_URL}/meals/${id}`);
+      const { id } = params;
+      
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
 
-      const data = await res.json();
+      const response = await fetch(`${this.baseUrl}/${id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        },
+        next: {
+          revalidate: options?.revalidate ?? 60,
+          tags: options?.tags ?? ["meal", `meal-${id}`],
+        },
+      });
 
-      return { data: data, error: null };
-    } catch (err) {
-      return { data: null, error: { message: "Something Went Wrong" } };
+      if (!response.ok) {
+        return { 
+          data: null, 
+          error: { message: `Failed to fetch meal: ${response.statusText}` } 
+        };
+      }
+
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
     }
-  },
+  }
 
-  createMeal: async (mealData: MealData) => {
+  async createMeal(mealData: MealData, authToken?: string): Promise<{ data: Meal | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
 
-      const res = await fetch(`${API_URL}/meals`, {
+      const response = await fetch(`${this.baseUrl}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Cookie: cookieStore.toString(),
+          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
         body: JSON.stringify(mealData),
       });
 
-      const data = await res.json();
-
-      if (data.error) {
-        return {
-          data: null,
-          error: { message: "Error: Meal not created." },
+      if (!response.ok) {
+        return { 
+          data: null, 
+          error: { message: `Failed to create meal: ${response.statusText}` } 
         };
       }
 
-      return { data: data, error: null };
-    } catch (err) {
-      return { data: null, error: { message: "Something Went Wrong" } };
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
     }
-  },
+  }
 
-  updateMeal: async (id: string, mealData: Partial<MealData>) => {
+  async updateMeal(id: string, mealData: Partial<MealData>, authToken?: string): Promise<{ data: Meal | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
 
-      const res = await fetch(`${API_URL}/meals/${id}`, {
+      const response = await fetch(`${this.baseUrl}/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Cookie: cookieStore.toString(),
+          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
         body: JSON.stringify(mealData),
       });
 
-      const data = await res.json();
-
-      if (data.error) {
-        return {
-          data: null,
-          error: { message: "Error: Meal not updated." },
+      if (!response.ok) {
+        return { 
+          data: null, 
+          error: { message: `Failed to update meal: ${response.statusText}` } 
         };
       }
 
-      return { data: data, error: null };
-    } catch (err) {
-      return { data: null, error: { message: "Something Went Wrong" } };
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
     }
-  },
+  }
 
-  deleteMeal: async (id: string) => {
+  async deleteMeal(id: string, authToken?: string): Promise<{ success: boolean; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
 
-      const res = await fetch(`${API_URL}/meals/${id}`, {
+      const response = await fetch(`${this.baseUrl}/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Cookie: cookieStore.toString(),
+          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
       });
 
-      const data = await res.json();
-
-      if (data.error) {
-        return {
-          data: null,
-          error: { message: "Error: Meal not deleted." },
+      if (!response.ok) {
+        return { 
+          success: false, 
+          error: { message: `Failed to delete meal: ${response.statusText}` } 
         };
       }
 
-      return { data: data, error: null };
-    } catch (err) {
-      return { data: null, error: { message: "Something Went Wrong" } };
+      return { success: true, error: null };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
     }
-  },
+  }
 
-  toggleFeatured: async (id: string, isFeatured: boolean) => {
+  async toggleFeatured(id: string, isFeatured: boolean, authToken?: string): Promise<{ data: Meal | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
 
-      const res = await fetch(`${API_URL}/meals/${id}/featured`, {
-        method: "PATCH",
+      const response = await fetch(`${this.baseUrl}/${id}/featured`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Cookie: cookieStore.toString(),
+          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
         body: JSON.stringify({ isFeatured }),
       });
 
-      const data = await res.json();
-
-      if (data.error) {
-        return {
-          data: null,
-          error: { message: "Error: Featured status not updated." },
+      if (!response.ok) {
+        return { 
+          data: null, 
+          error: { message: `Failed to toggle featured status: ${response.statusText}` } 
         };
       }
 
-      return { data: data, error: null };
-    } catch (err) {
-      return { data: null, error: { message: "Something Went Wrong" } };
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
     }
-  },
-};
+  }
+}
+
+export const mealService = new MealService();

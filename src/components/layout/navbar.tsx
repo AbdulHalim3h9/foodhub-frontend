@@ -10,10 +10,17 @@ import {
   ShoppingCart,
   User,
   Search,
+  ChevronDown,
+  Settings,
+  Package,
+  LogOut,
 } from "lucide-react";
+import { getCategories } from "@/actions/category.action";
+import { Category } from "@/services/category.service";
 import { useState, useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { getCartCount } from "@/actions/cart.action";
 
 import { cn } from "@/lib/utils";
 
@@ -33,6 +40,13 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -99,30 +113,6 @@ const Navbar1 = ({
       ],
     },
     {
-      title: "Top Providers",
-      url: "#",
-      items: [
-        {
-          title: "Featured Restaurants",
-          description: "Highest rated providers in your area",
-          icon: <Sunset className="size-5 shrink-0 text-orange-500" />,
-          url: "/browse",
-        },
-        {
-          title: "New Providers",
-          description: "Recently joined restaurants",
-          icon: <Trees className="size-5 shrink-0 text-orange-500" />,
-          url: "/browse",
-        },
-        {
-          title: "Local Favorites",
-          description: "Community loved restaurants",
-          icon: <Zap className="size-5 shrink-0 text-orange-500" />,
-          url: "/browse",
-        },
-      ],
-    },
-    {
       title: "About",
       url: "/about",
     },
@@ -140,6 +130,9 @@ const Navbar1 = ({
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [cartCount, setCartCount] = useState(0);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
 
@@ -167,6 +160,57 @@ const Navbar1 = ({
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
+
+  // Fetch cart count for customers
+  useEffect(() => {
+    if (session?.user && (session.user as any).role === "CUSTOMER") {
+      const fetchCartCount = async () => {
+        const result = await getCartCount();
+        if (result.success) {
+          setCartCount(result.count);
+        }
+      };
+      
+      fetchCartCount();
+      
+      // Set up periodic refresh (every 30 seconds)
+      const interval = setInterval(fetchCartCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session]);
+
+  // Fetch categories from backend
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const result = await getCategories();
+        if (result.success && result.data) {
+          setCategories(result.data.data || result.data || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
+
+  // Create dynamic menu with categories
+  const dynamicMenu = menu.map(item => {
+    if (item.title === "Categories") {
+      // Replace hardcoded categories with backend categories
+      return {
+        ...item,
+        items: categories.map(category => ({
+          title: category.name,
+          description: category.description || `Explore ${category.name} dishes`,
+          icon: <Utensils className="size-5 shrink-0 text-orange-500" />,
+          url: `/browse/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`,
+        }))
+      };
+    }
+    return item;
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,7 +240,7 @@ const Navbar1 = ({
             {/* Navigation Menu */}
             <NavigationMenu viewport={false}>
               <NavigationMenuList className="gap-1">
-                {menu.map((item) => renderMenuItem(item))}
+                {dynamicMenu.map((item) => renderMenuItem(item))}
               </NavigationMenuList>
             </NavigationMenu>
           </div>
@@ -217,21 +261,102 @@ const Navbar1 = ({
 
             {/* Auth Buttons */}
             <div className="flex items-center gap-2">
+              {/* Cart Icon - Only for customers */}
+              {session?.user && (session.user as any).role === "CUSTOMER" && (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-700 hover:text-orange-600 hover:bg-orange-50 relative p-2"
+                >
+                  <a href="/cart" className="flex items-center">
+                    <ShoppingCart className="h-5 w-5" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {cartCount > 99 ? "99+" : cartCount}
+                      </span>
+                    )}
+                  </a>
+                </Button>
+              )}
+              
               {isPending ? (
                 <div className="h-9 w-24 bg-gray-100 animate-pulse rounded-md" />
               ) : session?.user ? (
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700">
-                    Hi, {session.user.name?.split(" ")[0]}
-                  </span>
-                  <Button
-                    onClick={handleLogout}
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-700 hover:text-red-600 hover:bg-red-50"
-                  >
-                    Logout
-                  </Button>
+                  {/* User Dropdown */}
+                  <DropdownMenu open={isUserDropdownOpen} onOpenChange={setIsUserDropdownOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center gap-2 text-gray-700 hover:text-orange-600 hover:bg-orange-50"
+                      >
+                        <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+                          {session.user.image ? (
+                            <img 
+                              src={session.user.image} 
+                              alt={session.user.name}
+                              className="h-8 w-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <User className="h-4 w-4 text-gray-600" />
+                          )}
+                        </div>
+                        <span className="text-sm font-medium">
+                          {session.user.name?.split(" ")[0]}
+                        </span>
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      {/* User Info */}
+                      <div className="px-2 py-2 border-b">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            {session.user.image ? (
+                              <img 
+                                src={session.user.image} 
+                                alt={session.user.name}
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <User className="h-5 w-5 text-gray-600" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
+                            <p className="text-xs text-gray-500">{session.user.email}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Menu Items */}
+                      <DropdownMenuItem asChild>
+                        <a href="/profile" className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span>Profile</span>
+                        </a>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuItem asChild>
+                        <a href="/orders" className="flex items-center gap-2">
+                          <Package className="h-4 w-4" />
+                          <span>My Orders</span>
+                        </a>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuSeparator />
+                      
+                      <DropdownMenuItem 
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Logout</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               ) : (
                 <>
@@ -268,6 +393,25 @@ const Navbar1 = ({
 
             {/* Mobile Actions */}
             <div className="flex items-center gap-2">
+              {/* Cart Icon - Only for customers */}
+              {session?.user && (session.user as any).role === "CUSTOMER" && (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="icon"
+                  className="text-gray-700 hover:text-orange-600 hover:bg-orange-50 relative p-2"
+                >
+                  <a href="/cart" className="flex items-center">
+                    <ShoppingCart className="h-5 w-5" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {cartCount > 99 ? "99+" : cartCount}
+                      </span>
+                    )}
+                  </a>
+                </Button>
+              )}
+              
               {/* Mobile Search Toggle */}
               <Sheet>
                 <SheetTrigger asChild>
@@ -321,7 +465,7 @@ const Navbar1 = ({
                       collapsible
                       className="flex w-full flex-col gap-2"
                     >
-                      {menu.map((item) => renderMobileMenuItem(item))}
+                      {dynamicMenu.map((item) => renderMobileMenuItem(item))}
                     </Accordion>
 
                     <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
@@ -329,19 +473,64 @@ const Navbar1 = ({
                         <div className="h-10 w-full bg-gray-100 animate-pulse rounded-md" />
                       ) : session?.user ? (
                         <>
+                          {/* User Info Section */}
                           <div className="px-3 py-2 text-sm font-medium text-gray-700 border-b border-gray-50 pb-4">
-                            Logged in as{" "}
-                            <span className="text-orange-600 font-bold">
-                              {session.user.name}
-                            </span>
+                            <div className="flex items-center gap-3">
+                              <div className="h-12 w-12 bg-gray-200 rounded-full flex items-center justify-center">
+                                {session.user.image ? (
+                                  <img 
+                                    src={session.user.image} 
+                                    alt={session.user.name}
+                                    className="h-12 w-12 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <User className="h-6 w-6 text-gray-600" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-orange-600 font-bold">
+                                  {session.user.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {session.user.email}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                          <Button
-                            onClick={handleLogout}
-                            variant="outline"
-                            className="border-red-200 text-red-600 hover:bg-red-50"
-                          >
-                            Logout
-                          </Button>
+                          
+                          {/* Menu Items */}
+                          <div className="space-y-2">
+                            <Button
+                              asChild
+                              variant="outline"
+                              className="border-orange-200 text-orange-600 hover:bg-orange-50 w-full justify-start"
+                            >
+                              <a href="/profile" className="flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                <span>Profile</span>
+                              </a>
+                            </Button>
+                            
+                            <Button
+                              asChild
+                              variant="outline"
+                              className="border-orange-200 text-orange-600 hover:bg-orange-50 w-full justify-start"
+                            >
+                              <a href="/orders" className="flex items-center gap-2">
+                                <Package className="h-4 w-4" />
+                                <span>My Orders</span>
+                              </a>
+                            </Button>
+                            
+                            <Button
+                              onClick={handleLogout}
+                              variant="outline"
+                              className="border-red-200 text-red-600 hover:bg-red-50 w-full justify-start"
+                            >
+                              <LogOut className="h-4 w-4 mr-2" />
+                              Logout
+                            </Button>
+                          </div>
                         </>
                       ) : (
                         <>

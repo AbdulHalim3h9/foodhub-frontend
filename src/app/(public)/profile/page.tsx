@@ -12,7 +12,7 @@ import { getMyProfile, updateProfile } from "@/actions/profile.action";
 import { UserProfile } from "@/services/profile.service";
 import { toast } from "sonner";
 
-export default function CustomerProfile() {
+export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -211,8 +211,6 @@ export default function CustomerProfile() {
                       className="pl-10"
                       placeholder="Enter your full name"
                     />
-                    {/* Debug: Show current value */}
-                    <p className="text-xs text-gray-400 mt-1">Current: "{formData.name}"</p>
                   </div>
                 </div>
                 

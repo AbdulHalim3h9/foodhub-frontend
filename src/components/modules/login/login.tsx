@@ -54,7 +54,13 @@ export function Login({
         }
 
         toast.success("Login successful!", { id: toastId });
-        router.push("/dashboard");
+        
+        // Redirect based on user role
+        if ((data.user as any).role === "CUSTOMER") {
+          router.push("/browse");
+        } else {
+          router.push("/dashboard");
+        }
         router.refresh();
       } catch (err: any) {
         console.error(err);

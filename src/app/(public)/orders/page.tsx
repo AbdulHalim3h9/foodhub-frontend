@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { getCustomerOrders } from "@/actions/order.action";
 import { Order, PaginatedOrders } from "@/services/order.service";
 
-export default function CustomerOrders() {
+export default function OrdersPage() {
   const [orders, setOrders] = useState<PaginatedOrders | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);

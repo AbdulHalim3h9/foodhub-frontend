@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Heart, Clock, MapPin, Star, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import { Meal } from "@/types";
+import { useRouter } from "next/navigation";
 
 interface MealCardProps {
   meal: Meal;
@@ -11,8 +12,14 @@ interface MealCardProps {
 }
 
 export function MealCard({ meal, formatPrice }: MealCardProps) {
+  const router = useRouter();
+
+  const handleCardClick = () => {
+    router.push(`/browse/meal/${meal.id}`);
+  };
+
   return (
-    <Card className="group overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl flex flex-col bg-white">
+    <Card className="group overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl flex flex-col bg-white cursor-pointer" onClick={handleCardClick}>
       <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-gray-50">
         <Image
           src={

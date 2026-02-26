@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Plus, 
   Search, 
@@ -36,124 +37,113 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getMeals, createMeal, updateMeal, deleteMeal, toggleFeatured } from "@/actions/meal.action";
+import { GetMealsParams, MealData } from "@/services/meal.service";
+import { getCategories } from "@/actions/category.action";
+import { Category } from "@/services/category.service";
 
-// Mock data for menu items
-const menuItems = [
-  {
-    id: "1",
-    name: "Margherita Pizza",
-    description: "Fresh mozzarella, tomato sauce, and basil on our homemade dough",
-    category: "Pizza",
-    price: 12.99,
-    status: "active",
-    orders: 89,
-    rating: 4.8,
-    image: "https://images.unsplash.com/photo-1593560900405?w=100",
-    ingredients: ["Mozzarella", "Tomato Sauce", "Fresh Basil", "Homemade Dough"],
-    prepTime: "15-20 min",
-    allergens: ["Dairy", "Gluten"],
-    stock: 45,
-    featured: true,
-  },
-  {
-    id: "2",
-    name: "Chicken Pad Thai",
-    description: "Traditional Thai stir-fried rice noodles with chicken, vegetables, and our special sauce",
-    category: "Asian",
-    price: 14.99,
-    status: "active",
-    orders: 76,
-    rating: 4.7,
-    image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=100",
-    ingredients: ["Chicken", "Rice Noodles", "Vegetables", "Special Thai Sauce"],
-    prepTime: "20-25 min",
-    allergens: ["Soy", "Peanuts"],
-    stock: 32,
-    featured: false,
-  },
-  {
-    id: "3",
-    name: "Classic Burger",
-    description: "Juicy beef patty with lettuce, tomato, onion, and our special sauce on a brioche bun",
-    category: "Fast Food",
-    price: 10.99,
-    status: "active",
-    orders: 124,
-    rating: 4.5,
-    image: "https://images.unsplash.com/photo-1568901346375-23c44588c66c?w=100",
-    ingredients: ["Beef Patty", "Lettuce", "Tomato", "Onion", "Special Sauce", "Brioche Bun"],
-    prepTime: "10-15 min",
-    allergens: ["Gluten", "Dairy"],
-    stock: 8,
-    featured: true,
-  },
-  {
-    id: "4",
-    name: "Caesar Salad",
-    description: "Crisp romaine lettuce, parmesan cheese, croutons, and our house-made caesar dressing",
-    category: "Healthy",
-    price: 8.99,
-    status: "active",
-    orders: 58,
-    rating: 4.2,
-    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=100",
-    ingredients: ["Romaine Lettuce", "Parmesan Cheese", "Croutons", "Caesar Dressing"],
-    prepTime: "5-10 min",
-    allergens: ["Dairy", "Eggs"],
-    stock: 67,
-    featured: false,
-  },
-  {
-    id: "5",
-    name: "Spaghetti Carbonara",
-    description: "Creamy pasta with bacon, eggs, and parmesan cheese",
-    category: "Italian",
-    price: 13.99,
-    status: "inactive",
-    orders: 45,
-    rating: 4.6,
-    image: "https://images.unsplash.com/photo-1608896657426-735412fbb4b2?w=100",
-    ingredients: ["Spaghetti", "Bacon", "Eggs", "Parmesan Cheese", "Black Pepper"],
-    prepTime: "18-22 min",
-    allergens: ["Dairy", "Eggs", "Gluten"],
-    stock: 0,
-    featured: false,
-  },
-];
+// Define Meal interface based on backend response
+interface Meal {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  image?: string;
+  ingredients?: string;
+  allergens?: string;
+  prepTime?: number;
+  cuisine?: string;
+  isFeatured?: boolean;
+  isAvailable?: boolean;
+  categoryId: string;
+  category?: {
+    id: string;
+    name: string;
+  };
+  providerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-const categories = ["All", "Pizza", "Asian", "Fast Food", "Healthy", "Italian", "Beverages", "Desserts"];
+interface PaginatedMeals {
+  data: Meal[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
 
 export default function ProviderMenu() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  const filteredItems = menuItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active": return "bg-green-100 text-green-800";
-      case "inactive": return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
+  // Fetch meals on component mount and when filters change
+  useEffect(() => {
+    fetchMeals();
+  }, [searchTerm, selectedCategory]);
+
+  const fetchCategories = async () => {
+    setCategoriesLoading(true);
+    try {
+      const result = await getCategories();
+      if (result.success && result.data) {
+        setCategories(result.data.data || []);
+      } else {
+        console.error("Failed to fetch categories:", result.error);
+      }
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+    } finally {
+      setCategoriesLoading(false);
     }
   };
 
-  const getStockColor = (stock: number) => {
-    if (stock === 0) return "bg-red-100 text-red-800";
-    if (stock < 10) return "bg-yellow-100 text-yellow-800";
+  const fetchMeals = async () => {
+    setLoading(true);
+    setError(null);
+    
+    const params: GetMealsParams = {
+      search: searchTerm || undefined,
+      cuisine: selectedCategory !== "All" ? selectedCategory : undefined,
+    };
+
+    try {
+      const result = await getMeals(params);
+      if (result.success && result.data) {
+        setMeals(result.data.data || []);
+      } else {
+        setError(result.error || "Failed to fetch meals");
+      }
+    } catch (err) {
+      setError("Failed to fetch meals");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (isAvailable?: boolean) => {
+    if (isAvailable === false) return "bg-gray-100 text-gray-800";
     return "bg-green-100 text-green-800";
   };
 
-  const getStockText = (stock: number) => {
-    if (stock === 0) return "Out of Stock";
-    if (stock < 10) return "Low Stock";
-    return "In Stock";
+  const getStatusText = (isAvailable?: boolean) => {
+    if (isAvailable === false) return "Inactive";
+    return "Active";
   };
 
   const toggleItemSelection = (itemId: string) => {
@@ -165,11 +155,31 @@ export default function ProviderMenu() {
   };
 
   const selectAll = () => {
-    setSelectedItems(filteredItems.map(item => item.id));
+    setSelectedItems(meals.map(item => item.id));
   };
 
   const clearSelection = () => {
     setSelectedItems([]);
+  };
+
+  const handleToggleFeatured = async (mealId: string, isFeatured: boolean) => {
+    try {
+      await toggleFeatured(mealId, isFeatured);
+      fetchMeals(); // Refresh the list
+    } catch (error) {
+      console.error("Failed to toggle featured status:", error);
+    }
+  };
+
+  const handleDeleteMeal = async (mealId: string) => {
+    if (window.confirm("Are you sure you want to delete this meal?")) {
+      try {
+        await deleteMeal(mealId);
+        fetchMeals(); // Refresh the list
+      } catch (error) {
+        console.error("Failed to delete meal:", error);
+      }
+    }
   };
 
   return (
@@ -203,9 +213,14 @@ export default function ProviderMenu() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(category => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
+                  <SelectItem key="All" value="All">All</SelectItem>
+                  {categoriesLoading ? (
+                    <SelectItem disabled>Loading...</SelectItem>
+                  ) : (
+                    categories.map(category => (
+                      <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
 
@@ -231,7 +246,10 @@ export default function ProviderMenu() {
               
               {/* Actions */}
               <div className="flex items-center gap-2">
-                <Button className="bg-orange-500 hover:bg-orange-600">
+                <Button 
+                  className="bg-orange-500 hover:bg-orange-600"
+                  onClick={() => router.push("/dashboard/menu/create")}
+                >
                   <Plus className="size-4 mr-2" />
                   Add New Item
                 </Button>
@@ -267,7 +285,7 @@ export default function ProviderMenu() {
                 <Package className="size-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{menuItems.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{meals.length}</p>
                 <p className="text-sm text-gray-600">Total Items</p>
               </div>
             </div>
@@ -279,7 +297,7 @@ export default function ProviderMenu() {
                 <Eye className="size-6 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{menuItems.filter(item => item.status === 'active').length}</p>
+                <p className="text-2xl font-bold text-gray-900">{meals.filter(item => item.isAvailable !== false).length}</p>
                 <p className="text-sm text-gray-600">Active Items</p>
               </div>
             </div>
@@ -291,7 +309,7 @@ export default function ProviderMenu() {
                 <ChefHat className="size-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{menuItems.filter(item => item.featured).length}</p>
+                <p className="text-2xl font-bold text-gray-900">{meals.filter(item => item.isFeatured).length}</p>
                 <p className="text-sm text-gray-600">Featured Items</p>
               </div>
             </div>
@@ -317,24 +335,32 @@ export default function ProviderMenu() {
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={selectedItems.length === filteredItems.length}
+                  checked={selectedItems.length === meals.length}
                   onChange={(e) => e.target.checked ? selectAll() : clearSelection()}
                   className="size-4 text-orange-600 focus:ring-orange-500"
                 />
                 <label className="text-sm text-gray-600 ml-2">
-                  Select all ({selectedItems.length} of {filteredItems.length})
+                  Select all ({selectedItems.length} of {meals.length})
                 </label>
               </div>
               
               <div className="text-sm text-gray-600">
-                Showing {filteredItems.length} items
+                Showing {meals.length} items
               </div>
             </div>
 
             {/* Grid/List View */}
-            {viewMode === "grid" ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-gray-500">Loading meals...</div>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-red-500">{error}</div>
+              </div>
+            ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredItems.map((item) => (
+                {meals.map((item) => (
                   <div key={item.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="relative">
                       {/* Checkbox */}
@@ -355,14 +381,14 @@ export default function ProviderMenu() {
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute top-3 right-3 flex flex-col gap-2">
-                          {item.featured && (
+                          {item.isFeatured && (
                             <Badge className="bg-yellow-100 text-yellow-800">
                               <Star className="size-3 mr-1" />
                               Featured
                             </Badge>
                           )}
-                          <Badge className={getStatusColor(item.status)}>
-                            {item.status}
+                          <Badge className={getStatusColor(item.isAvailable)}>
+                            {getStatusText(item.isAvailable)}
                           </Badge>
                         </div>
                       </div>
@@ -377,49 +403,51 @@ export default function ProviderMenu() {
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
                               <Clock className="size-3" />
-                              {item.prepTime}
+                              {item.prepTime ? `${item.prepTime} min` : "N/A"}
                             </span>
                             <span className="flex items-center gap-1">
                               <DollarSign className="size-3" />
-                              {item.price.toFixed(2)}
+                              ${Number(item.price).toFixed(2)}
                             </span>
                           </div>
                         </div>
                       </div>
                       
-                      {/* Stock Status */}
+                      {/* Category */}
                       <div className="mb-3">
-                        <Badge className={getStockColor(item.stock)}>
-                          {getStockText(item.stock)}
+                        <Badge className="bg-blue-100 text-blue-800">
+                          {item.category?.name || 'No Category'}
                         </Badge>
-                        <span className="text-sm text-gray-600 ml-2">{item.stock} units</span>
                       </div>
                       
-                      {/* Ingredients & Allergens */}
-                      <div className="mb-3 space-y-2">
-                        <div>
-                          <p className="text-xs font-medium text-gray-700 mb-1">Ingredients:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {item.ingredients.slice(0, 3).map((ingredient, index) => (
-                              <span key={index} className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                {ingredient}
-                              </span>
-                            ))}
-                            {item.ingredients.length > 3 && (
-                              <span className="text-xs text-gray-500">+{item.ingredients.length - 3} more</span>
-                            )}
-                          </div>
+                      {/* Ingredients */}
+                      <div className="mb-3">
+                        <p className="text-xs font-medium text-gray-700 mb-1">Ingredients:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {item.ingredients ? item.ingredients.split(',').slice(0, 3).map((ingredient, index) => (
+                            <span key={index} className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                              {ingredient.trim()}
+                            </span>
+                          )) : (
+                            <span className="text-xs text-gray-500">No ingredients listed</span>
+                          )}
+                          {item.ingredients && item.ingredients.split(',').length > 3 && (
+                            <span className="text-xs text-gray-500">+{item.ingredients.split(',').length - 3} more</span>
+                          )}
                         </div>
-                        
-                        <div>
-                          <p className="text-xs font-medium text-gray-700 mb-1">Allergens:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {item.allergens.map((allergen, index) => (
-                              <span key={index} className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
-                                {allergen}
-                              </span>
-                            ))}
-                          </div>
+                      </div>
+                      
+                      {/* Allergens */}
+                      <div className="mb-3">
+                        <p className="text-xs font-medium text-gray-700 mb-1">Allergens:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {item.allergens ? item.allergens.split(',').map((allergen, index) => (
+                            <span key={index} className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
+                              {allergen.trim()}
+                            </span>
+                          )) : (
+                            <span className="text-xs text-gray-500">No allergens listed</span>
+                          )}
                         </div>
                       </div>
                       
@@ -428,11 +456,11 @@ export default function ProviderMenu() {
                         <div className="text-right">
                           <div className="flex items-center gap-1 mb-2">
                             <Star className="size-3 text-yellow-400 fill-current" />
-                            <span className="text-sm text-gray-600">{item.rating}</span>
+                            <span className="text-sm text-gray-600">{item.category?.name || 'No Category'}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <BarChart3 className="size-3 text-gray-400" />
-                            <span className="text-sm text-gray-600">{item.orders} orders</span>
+                            <span className="text-sm text-gray-600">{item.cuisine || 'No Cuisine'}</span>
                           </div>
                         </div>
                         
@@ -443,7 +471,12 @@ export default function ProviderMenu() {
                           <Button variant="outline" size="sm" className="border-gray-200">
                             <Edit className="size-4" />
                           </Button>
-                          <Button variant="outline" size="sm" className="border-red-200 text-red-600">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-red-200 text-red-600"
+                            onClick={() => handleDeleteMeal(item.id)}
+                          >
                             <Trash2 className="size-4" />
                           </Button>
                         </div>
@@ -454,7 +487,7 @@ export default function ProviderMenu() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredItems.map((item) => (
+                {meals.map((item) => (
                   <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -474,36 +507,33 @@ export default function ProviderMenu() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
-                            {item.featured && (
+                            {item.isFeatured && (
                               <Badge className="bg-yellow-100 text-yellow-800">
                                 <Star className="size-3 mr-1" />
                                 Featured
                               </Badge>
                             )}
-                            <Badge className={getStatusColor(item.status)}>
-                              {item.status}
-                            </Badge>
-                            <Badge className={getStockColor(item.stock)}>
-                              {getStockText(item.stock)}
+                            <Badge className={getStatusColor(item.isAvailable)}>
+                              {getStatusText(item.isAvailable)}
                             </Badge>
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{item.description}</p>
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
                               <Clock className="size-3" />
-                              {item.prepTime}
+                              {item.prepTime ? `${item.prepTime} min` : "N/A"}
                             </span>
                             <span className="flex items-center gap-1">
                               <DollarSign className="size-3" />
-                              {item.price.toFixed(2)}
+                              ${Number(item.price).toFixed(2)}
                             </span>
                             <span className="flex items-center gap-1">
                               <Star className="size-3 text-yellow-400 fill-current" />
-                              {item.rating}
+                              {item.category?.name || 'No Category'}
                             </span>
                             <span className="flex items-center gap-1">
                               <BarChart3 className="size-3 text-gray-400" />
-                              {item.orders} orders
+                              {item.cuisine || 'No Cuisine'}
                             </span>
                           </div>
                         </div>
@@ -516,7 +546,12 @@ export default function ProviderMenu() {
                         <Button variant="outline" size="sm" className="border-gray-200">
                           <Edit className="size-4" />
                         </Button>
-                        <Button variant="outline" size="sm" className="border-red-200 text-red-600">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="border-red-200 text-red-600"
+                          onClick={() => handleDeleteMeal(item.id)}
+                        >
                           <Trash2 className="size-4" />
                         </Button>
                       </div>

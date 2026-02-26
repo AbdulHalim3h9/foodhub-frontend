@@ -66,7 +66,13 @@ export function Signup({
         }
 
         toast.success("Account created successfully!", { id: toastId });
-        router.push("/dashboard");
+        
+        // Redirect based on user role
+        if ((data.user as any).role === "CUSTOMER") {
+          router.push("/browse");
+        } else {
+          router.push("/dashboard");
+        }
         router.refresh();
       } catch (err) {
         console.error(err);

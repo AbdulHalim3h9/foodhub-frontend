@@ -1,9 +1,9 @@
-export default function CustomerFavorites() {
+export default function CustomerCart() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-gray-900">Favorites</h1>
+      <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
       <p className="mt-4 text-lg text-gray-600">
-        Your favorite food providers and items.
+        Manage your shopping cart items.
       </p>
     </div>
   );

@@ -3,22 +3,41 @@ import { cookies } from "next/headers";
 
 const API_URL = env.API_URL;
 
+export interface OrderItem {
+  id: string;
+  quantity: number;
+  meal: {
+    id: string;
+    name: string;
+    price: string;
+    image: string;
+  };
+  totalPrice: string;
+}
+
 export interface Order {
   id: string;
-  status: string;
-  totalAmount: string | number; // Comes from Prisma Decimal
+  orderNumber: string;
+  status: "PENDING" | "CONFIRMED" | "PREPARING" | "READY" | "COMPLETED" | "CANCELLED";
+  totalAmount: string;
   deliveryAddress: string;
   deliveryPhone: string;
   specialInstructions?: string;
+  items: OrderItem[];
   createdAt: string;
   updatedAt: string;
-  customer: {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  customer?: {
     id: string;
     name: string;
     email: string;
     phone?: string;
   };
-  provider: {
+  provider?: {
     id: string;
     businessName: string;
     phone: string;
@@ -26,16 +45,6 @@ export interface Order {
       email: string;
     };
   };
-  items: {
-    id: string;
-    quantity: number;
-    price: string | number; // Comes from Prisma Decimal
-    meal: {
-      id: string;
-      name: string;
-      price: string | number; // Comes from Prisma Decimal
-    };
-  }[];
 }
 
 export interface PaginatedOrders {
@@ -48,15 +57,22 @@ export interface PaginatedOrders {
   };
 }
 
+export interface CreateOrderData {
+  items: {
+    mealId: string;
+    quantity: number;
+  }[];
+  deliveryAddress: string;
+  deliveryPhone: string;
+  specialInstructions?: string;
+}
+
 export interface GetOrdersParams {
   search?: string;
-  status?: string;
-  customerId?: string;
-  providerId?: string;
   page?: string;
   limit?: string;
-  sortBy?: string;
-  sortOrder?: string;
+  sort?: string;
+  status?: string;
 }
 
 export interface ServiceOptions {
@@ -68,89 +84,175 @@ class OrderService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${API_URL}/admin/orders`;
+    this.baseUrl = `${API_URL}/orders`;
   }
 
-  async getAllOrders(
-    params?: GetOrdersParams,
-    options?: ServiceOptions,
-  ): Promise<PaginatedOrders> {
-    console.log("Fetching orders with params:", params);
-    const searchParams = new URLSearchParams();
+  async getOrders(params?: GetOrdersParams, options?: ServiceOptions): Promise<{ data: PaginatedOrders | null; error: { message: string } | null }> {
+    try {
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
 
-    if (params?.search) searchParams.append("search", params.search);
-    if (params?.status) searchParams.append("status", params.status);
-    if (params?.customerId) searchParams.append("customerId", params.customerId);
-    if (params?.providerId) searchParams.append("providerId", params.providerId);
-    if (params?.page) searchParams.append("page", params.page);
-    if (params?.limit) searchParams.append("limit", params.limit);
-    if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
-    if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
+      const searchParams = new URLSearchParams();
+      
+      if (params?.search) searchParams.append('search', params.search);
+      if (params?.page) searchParams.append('page', params.page);
+      if (params?.limit) searchParams.append('limit', params.limit);
+      if (params?.sort) searchParams.append('sort', params.sort);
+      if (params?.status) searchParams.append('status', params.status);
 
-    const url = searchParams.toString()
-      ? `${this.baseUrl}?${searchParams.toString()}`
-      : this.baseUrl;
-    
-    // Build cookie header for server-side requests
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((c) => `${c.name}=${c.value}`)
-      .join('; ');
-    
-    console.log("Cookie header:", cookieHeader);
-    
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        ...(cookieHeader && { Cookie: cookieHeader }),
-      },
-      next: {
-        revalidate: options?.revalidate ?? 60,
-        tags: options?.tags ?? ["orders"],
-      },
-    });
+      const url = searchParams.toString() 
+        ? `${this.baseUrl}?${searchParams.toString()}`
+        : this.baseUrl;
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch orders: ${response.statusText}`);
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        },
+        next: {
+          revalidate: options?.revalidate ?? 60,
+          tags: options?.tags ?? ["orders"],
+        },
+      });
+
+      if (!response.ok) {
+        return { 
+          data: null, 
+          error: { message: `Failed to fetch orders: ${response.statusText}` } 
+        };
+      }
+
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
     }
-
-    return response.json();
   }
 
-  async updateOrderStatus(
-    id: string,
-    status: string,
-    options?: ServiceOptions,
-  ): Promise<Order> {
-    console.log("Updating order status:", id, status);
-    
-    // Build cookie header for server-side requests
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((c) => `${c.name}=${c.value}`)
-      .join('; ');
-    
-    const response = await fetch(`${this.baseUrl}/${id}/status`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        ...(cookieHeader && { Cookie: cookieHeader }),
-      },
-      body: JSON.stringify({ status }),
-      next: {
-        revalidate: options?.revalidate ?? 0,
-        tags: options?.tags ?? [`order-${id}`],
-      },
-    });
+  async getOrderById(id: string, options?: ServiceOptions): Promise<{ data: Order | null; error: { message: string } | null }> {
+    try {
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
 
-    if (!response.ok) {
-      throw new Error(`Failed to update order status: ${response.statusText}`);
+      const response = await fetch(`${this.baseUrl}/${id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        },
+        next: {
+          revalidate: options?.revalidate ?? 60,
+          tags: options?.tags ?? [`order-${id}`],
+        },
+      });
+
+      if (!response.ok) {
+        return { 
+          data: null, 
+          error: { message: `Failed to fetch order: ${response.statusText}` } 
+        };
+      }
+
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
     }
+  }
 
-    return response.json();
+  async createOrder(orderData: CreateOrderData, options?: ServiceOptions): Promise<{ data: Order | null; error: { message: string } | null }> {
+    try {
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
+
+      const response = await fetch(`${this.baseUrl}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        },
+        body: JSON.stringify(orderData),
+        next: {
+          revalidate: options?.revalidate ?? 0,
+          tags: options?.tags ?? ["orders"],
+        },
+      });
+
+      if (!response.ok) {
+        return { 
+          data: null, 
+          error: { message: `Failed to create order: ${response.statusText}` } 
+        };
+      }
+
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
+    }
+  }
+
+  async updateOrderStatus(id: string, status: string, options?: ServiceOptions): Promise<{ data: Order | null; error: { message: string } | null }> {
+    try {
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
+
+      const response = await fetch(`${this.baseUrl}/${id}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        },
+        body: JSON.stringify({ status }),
+        next: {
+          revalidate: options?.revalidate ?? 0,
+          tags: options?.tags ?? [`order-${id}`],
+        },
+      });
+
+      if (!response.ok) {
+        return { 
+          data: null, 
+          error: { message: `Failed to update order status: ${response.statusText}` } 
+        };
+      }
+
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
+    }
+  }
+
+  // Admin methods
+  async getAllOrders(params?: GetOrdersParams, options?: ServiceOptions): Promise<{ data: PaginatedOrders | null; error: { message: string } | null }> {
+    // For admin, this might include all orders from all users
+    return this.getOrders(params, options);
   }
 }
 

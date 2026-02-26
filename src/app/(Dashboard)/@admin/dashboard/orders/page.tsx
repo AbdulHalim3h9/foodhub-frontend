@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { getOrders, updateOrderStatus } from "@/actions/order.action";
+import { getAllOrders, updateOrderStatus } from "@/actions/order.action";
 import { Order, GetOrdersParams } from "@/services/order.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,12 +46,11 @@ export default function AdminOrders() {
       status: statusFilter !== "all" ? statusFilter : undefined,
       page: pagination.page.toString(),
       limit: pagination.limit.toString(),
-      sortBy: "createdAt",
-      sortOrder: "desc",
+      sort: "-createdAt",
     };
 
     try {
-      const result = await getOrders(params);
+      const result = await getAllOrders(params);
       if (result.success && result.data) {
         setOrders(result.data.data);
         setPagination(result.data.pagination);
