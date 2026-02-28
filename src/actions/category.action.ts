@@ -17,7 +17,10 @@ export async function getCategories(queryParams: any = {}): Promise<{ success: b
       };
     }
     
-    return { success: true, data: result.data, error: null };
+    // Handle direct response or wrapped response
+    const categories = Array.isArray(result) ? result : result.data;
+    
+    return { success: true, data: categories, error: null };
   } catch (error) {
     console.error("Failed to fetch categories:", error);
     return {

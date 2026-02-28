@@ -20,48 +20,67 @@ export async function getDashboardStats() {
       providerService.getAllProviders({ limit: "1000" }, { revalidate: 0 }),
     ]);
 
-    const users = usersData.data;
-    const orders = ordersData.data;
-    const providers = providersData.data;
+    const users = usersData.data || [];
+    const orders = ordersData.data?.data || [];
+    const providers = providersData.data || [];
+
+    console.log("Dashboard Debug - Orders:", orders);
+    console.log("Dashboard Debug - OrdersData:", ordersData);
 
     // Calculate stats
     const totalOrders = orders.length;
-    const activeUsers = users.filter((user: any) => user.status === 'ACTIVE').length;
-    const activeProviders = providers.filter((provider: any) => provider.isActive).length;
-    
+    const activeUsers = users.filter(
+      (user: any) => user.status === "ACTIVE",
+    ).length;
+    const activeProviders = providers.filter(
+      (provider: any) => provider.isActive,
+    ).length;
+
     // Calculate order status breakdown
-    const orderStats = orders.reduce((acc: any, order: any) => {
-      acc[order.status] = (acc[order.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const orderStats = orders.reduce(
+      (acc: any, order: any) => {
+        acc[order.status] = (acc[order.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // Calculate user role breakdown
-    const userStats = users.reduce((acc: any, user: any) => {
-      acc[user.role] = (acc[user.role] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const userStats = users.reduce(
+      (acc: any, user: any) => {
+        acc[user.role] = (acc[user.role] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
-    // Get recent orders (last 5)
+    // Get recent orders (all orders)
     const recentOrders = orders
-      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5);
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
 
     // Get top providers by order count
-    const providerOrderCounts = orders.reduce((acc: any, order: any) => {
-      const providerId = order.provider.id;
-      const providerName = order.provider.businessName;
-      if (!acc[providerId]) {
-        acc[providerId] = {
-          id: providerId,
-          name: providerName,
-          orderCount: 0,
-          totalRevenue: 0,
-        };
-      }
-      acc[providerId].orderCount += 1;
-      acc[providerId].totalRevenue += Number(order.totalAmount);
-      return acc;
-    }, {} as Record<string, any>);
+    const providerOrderCounts = orders.reduce(
+      (acc: any, order: any) => {
+        const providerId = order.provider?.id;
+        const providerName = order.provider?.businessName;
+        if (!providerId) return acc;
+        if (!acc[providerId]) {
+          acc[providerId] = {
+            id: providerId,
+            name: providerName,
+            orderCount: 0,
+            totalRevenue: 0,
+          };
+        }
+        acc[providerId].orderCount += 1;
+        acc[providerId].totalRevenue += Number(order.totalAmount);
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
 
     const topProviders = Object.values(providerOrderCounts)
       .sort((a: any, b: any) => b.orderCount - a.orderCount)

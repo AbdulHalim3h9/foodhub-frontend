@@ -45,7 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { getAllOrders, updateOrderStatus } from "@/actions/order.action";
+import { getProviderOrders, updateOrderStatus } from "@/actions/order.action";
 import { Order, GetOrdersParams } from "@/services/order.service";
 
 export default function ProviderOrders() {
@@ -75,7 +75,7 @@ export default function ProviderOrders() {
       };
 
       try {
-        const result = await getAllOrders(params);
+        const result = await getProviderOrders(params);
         if (result.success && result.data) {
           setOrders(result.data.data);
           setPagination(result.data.pagination);
@@ -97,6 +97,7 @@ export default function ProviderOrders() {
     switch (status) {
       case "DELIVERED": return "bg-green-100 text-green-800 border-green-200 hover:bg-green-100";
       case "PREPARING": return "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100";
+      case "READY": return "bg-cyan-100 text-cyan-800 border-cyan-200 hover:bg-cyan-100";
       case "OUT_FOR_DELIVERY": return "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-100";
       case "PENDING": return "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100";
       case "CONFIRMED": return "bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-100";
@@ -109,6 +110,7 @@ export default function ProviderOrders() {
     switch (status) {
       case "DELIVERED": return <Check className="size-3" />;
       case "PREPARING": return <Clock className="size-3" />;
+      case "READY": return <Check className="size-3" />;
       case "OUT_FOR_DELIVERY": return <Truck className="size-3" />;
       case "PENDING": return <Calendar className="size-3" />;
       case "CONFIRMED": return <Check className="size-3" />;
@@ -122,24 +124,53 @@ export default function ProviderOrders() {
   };
 
   const handleStatusUpdate = async (orderId: string, newStatus: Order["status"]) => {
+    const previousOrders = orders;
+    const previousSelectedOrder = selectedOrder;
+
+    // Enforce: DELIVERED is final (frontend)
+    const current = orders.find((o) => o.id === orderId) ?? (selectedOrder?.id === orderId ? selectedOrder : null);
+    if (current?.status === "DELIVERED") {
+      setError("Delivered orders cannot be updated!");
+      return;
+    }
+
     try {
+      setError(null);
+
+      // Optimistic UI update
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+      setSelectedOrder((prev) => (prev?.id === orderId ? { ...prev, status: newStatus } : prev));
+
       const result = await updateOrderStatus(orderId, newStatus);
       if (result.success) {
+        // If the order no longer matches the current filter, switch to all
+        if (statusFilter !== "all" && newStatus !== (statusFilter as Order["status"])) {
+          setStatusFilter("all");
+          setPagination((prev) => ({ ...prev, page: 1 }));
+          return;
+        }
+
         // Refetch orders
         const params: GetOrdersParams = {
           search: searchTerm || undefined,
-          status: statusFilter !== "all" ? statusFilter as Order["status"] : undefined,
+          status: statusFilter !== "all" ? (statusFilter as Order["status"]) : undefined,
           page: pagination.page.toString(),
           limit: pagination.limit.toString(),
         };
-        const updatedResult = await getAllOrders(params);
+        const updatedResult = await getProviderOrders(params);
         if (updatedResult.success && updatedResult.data) {
           setOrders(updatedResult.data.data);
         }
       } else {
+        // Revert optimistic update
+        setOrders(previousOrders);
+        setSelectedOrder(previousSelectedOrder);
         setError(result.error || "Failed to update order status");
       }
     } catch (err) {
+      // Revert optimistic update
+      setOrders(previousOrders);
+      setSelectedOrder(previousSelectedOrder);
       setError("An unexpected error occurred");
     }
   };
@@ -148,6 +179,7 @@ export default function ProviderOrders() {
   const totalOrders = orders.length;
   const deliveredOrders = orders.filter(o => o.status === 'DELIVERED').length;
   const preparingOrders = orders.filter(o => o.status === 'PREPARING').length;
+  const readyOrders = orders.filter(o => o.status === 'READY').length;
   const outForDeliveryOrders = orders.filter(o => o.status === 'OUT_FOR_DELIVERY').length;
 
   const getPaymentIcon = (method: string) => {
@@ -194,6 +226,7 @@ export default function ProviderOrders() {
               <SelectItem value="PENDING">Pending</SelectItem>
               <SelectItem value="CONFIRMED">Confirmed</SelectItem>
               <SelectItem value="PREPARING">Preparing</SelectItem>
+              <SelectItem value="READY">Ready</SelectItem>
               <SelectItem value="OUT_FOR_DELIVERY">Out for Delivery</SelectItem>
               <SelectItem value="DELIVERED">Delivered</SelectItem>
               <SelectItem value="CANCELLED">Cancelled</SelectItem>
@@ -203,7 +236,7 @@ export default function ProviderOrders() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -226,6 +259,19 @@ export default function ProviderOrders() {
               <div>
                 <p className="text-2xl font-bold">{preparingOrders}</p>
                 <p className="text-xs text-muted-foreground">Preparing Orders</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-100 rounded-full">
+                <Check className="size-5 text-cyan-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{readyOrders}</p>
+                <p className="text-xs text-muted-foreground">Ready Orders</p>
               </div>
             </div>
           </CardContent>
@@ -296,27 +342,20 @@ export default function ProviderOrders() {
                       <div className="flex items-center gap-3">
                         <div className="size-8 rounded-full bg-orange-100 flex items-center justify-center">
                           <span className="text-orange-600 font-bold text-sm">
-                            {order.customer.name.charAt(0)}
+                            {(order as any).customer?.name?.charAt(0) || order.user?.name?.charAt(0) || "C"}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium">{order.customer.name}</p>
-                          <p className="text-sm text-muted-foreground">{order.customer.email}</p>
+                          <p className="font-medium">{(order as any).customer?.name || order.user?.name || "Customer"}</p>
+                          <p className="text-sm text-muted-foreground">{(order as any).customer?.email || order.user?.email || ""}</p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        {order.items.slice(0, 2).map((item, index) => (
-                          <div key={index} className="flex items-center gap-2 text-sm">
-                            <span>{item.quantity}x {item.meal.name}</span>
-                          </div>
-                        ))}
-                        {order.items.length > 2 && (
-                          <div className="text-sm text-muted-foreground">
-                            +{order.items.length - 2} more items
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2 text-sm">
+                          <span>{order.quantity}x {order.meal?.name ?? "Meal"}</span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -347,7 +386,35 @@ export default function ProviderOrders() {
                         >
                           <Eye className="size-4" />
                         </Button>
+                        <Select
+                          value={order.status}
+                          onValueChange={(value) => handleStatusUpdate(order.id, value as Order["status"])}
+                          disabled={order.status === "DELIVERED"}
+                        >
+                          <SelectTrigger className="h-8 w-[150px]">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="PENDING">Pending</SelectItem>
+                            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                            <SelectItem value="PREPARING">Preparing</SelectItem>
+                            <SelectItem value="READY">Ready</SelectItem>
+                            <SelectItem value="OUT_FOR_DELIVERY">Out for Delivery</SelectItem>
+                            <SelectItem value="DELIVERED">Delivered</SelectItem>
+                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
                         {order.status === 'PREPARING' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleStatusUpdate(order.id, 'READY')}
+                            className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50"
+                          >
+                            <Check className="size-4" />
+                          </Button>
+                        )}
+                        {order.status === 'READY' && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -500,20 +567,18 @@ export default function ProviderOrders() {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold mb-3">Order Items</h3>
                   <div className="space-y-3">
-                    {selectedOrder.items.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center justify-center size-8 rounded-full bg-orange-100 text-orange-600 font-bold text-sm">
-                            {item.quantity}
-                          </div>
-                          <div>
-                            <p className="font-medium">{item.meal.name}</p>
-                            <p className="text-sm text-muted-foreground">${Number(item.price).toFixed(2)}</p>
-                          </div>
+                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center size-8 rounded-full bg-orange-100 text-orange-600 font-bold text-sm">
+                          {selectedOrder.quantity}
                         </div>
-                        <span className="font-medium">${(Number(item.price) * item.quantity).toFixed(2)}</span>
+                        <div>
+                          <p className="font-medium">{selectedOrder.meal?.name ?? "Meal"}</p>
+                          <p className="text-sm text-muted-foreground">${Number(selectedOrder.pricePerItem).toFixed(2)}</p>
+                        </div>
                       </div>
-                    ))}
+                      <p className="font-medium">${Number(selectedOrder.totalAmount).toFixed(2)}</p>
+                    </div>
                   </div>
                   
                   <div className="flex justify-between items-center pt-4 border-t">
@@ -552,7 +617,31 @@ export default function ProviderOrders() {
                   <Phone className="size-4 mr-2" />
                   Call Customer
                 </Button>
+                <Select
+                  value={selectedOrder.status}
+                  onValueChange={(value) => handleStatusUpdate(selectedOrder.id, value as Order["status"])}
+                  disabled={selectedOrder.status === "DELIVERED"}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Update status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                    <SelectItem value="PREPARING">Preparing</SelectItem>
+                    <SelectItem value="READY">Ready</SelectItem>
+                    <SelectItem value="OUT_FOR_DELIVERY">Out for Delivery</SelectItem>
+                    <SelectItem value="DELIVERED">Delivered</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
                 {selectedOrder.status === 'PREPARING' && (
+                  <Button onClick={() => handleStatusUpdate(selectedOrder.id, 'READY')}>
+                    <Check className="size-4 mr-2" />
+                    Mark as Ready
+                  </Button>
+                )}
+                {selectedOrder.status === 'READY' && (
                   <Button onClick={() => handleStatusUpdate(selectedOrder.id, 'OUT_FOR_DELIVERY')}>
                     <Truck className="size-4 mr-2" />
                     Mark as Out for Delivery

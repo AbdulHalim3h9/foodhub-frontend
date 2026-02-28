@@ -14,6 +14,7 @@ import {
   Settings,
   Package,
   LogOut,
+  Layout,
 } from "lucide-react";
 import { getCategories } from "@/actions/category.action";
 import { Category } from "@/services/category.service";
@@ -195,27 +196,46 @@ const Navbar1 = ({
     fetchCategories();
   }, []);
 
-  // Create dynamic menu with categories
-  const dynamicMenu = menu.map(item => {
-    if (item.title === "Categories") {
-      // Replace hardcoded categories with backend categories
-      return {
-        ...item,
-        items: categories.map(category => ({
-          title: category.name,
-          description: category.description || `Explore ${category.name} dishes`,
-          icon: <Utensils className="size-5 shrink-0 text-orange-500" />,
-          url: `/browse/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`,
-        }))
-      };
+  // Create dynamic menu with categories and role-based items
+  const dynamicMenu = (() => {
+    let baseMenu = menu.map(item => {
+      if (item.title === "Categories") {
+        // Replace hardcoded categories with backend categories
+        return {
+          ...item,
+          items: categories.map(category => ({
+            title: category.name,
+            description: category.description || `Explore ${category.name} dishes`,
+            icon: <Utensils className="size-5 shrink-0 text-orange-500" />,
+            url: `/browse/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`,
+          }))
+        };
+      }
+      return item;
+    });
+
+    // Add Dashboard item for admin and provider roles
+    if (session?.user && (session.user as any).role !== "CUSTOMER") {
+      // Insert Dashboard after "Home" and before "Browse Meals"
+      const dashboardIndex = baseMenu.findIndex(item => item.title === "Browse Meals");
+      if (dashboardIndex > 0) {
+        baseMenu.splice(dashboardIndex, 0, {
+          title: "Dashboard",
+          url: "/dashboard",
+          icon: <Layout className="size-5 shrink-0 text-orange-500" />,
+        });
+      }
     }
-    return item;
-  });
+
+    return baseMenu;
+  })();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Searching for:", searchQuery);
-    // Add your search logic here
+    if (searchQuery.trim()) {
+      // Navigate to browse page with search query
+      window.location.href = `/browse?search=${encodeURIComponent(searchQuery.trim())}`;
+    }
   };
   return (
     <section
@@ -338,6 +358,16 @@ const Navbar1 = ({
                           <span>Profile</span>
                         </a>
                       </DropdownMenuItem>
+                      
+                      {/* Dashboard - Only for Admin and Provider */}
+                      {session?.user && (session.user as any).role !== "CUSTOMER" && (
+                        <DropdownMenuItem asChild>
+                          <a href="/dashboard" className="flex items-center gap-2">
+                            <Layout className="h-4 w-4" />
+                            <span>Dashboard</span>
+                          </a>
+                        </DropdownMenuItem>
+                      )}
                       
                       <DropdownMenuItem asChild>
                         <a href="/orders" className="flex items-center gap-2">
@@ -500,6 +530,20 @@ const Navbar1 = ({
                           
                           {/* Menu Items */}
                           <div className="space-y-2">
+                            {/* Dashboard - Only for Admin and Provider */}
+                            {session?.user && (session.user as any).role !== "CUSTOMER" && (
+                              <Button
+                                asChild
+                                variant="outline"
+                                className="border-orange-200 text-orange-600 hover:bg-orange-50 w-full justify-start"
+                              >
+                                <a href="/dashboard" className="flex items-center gap-2">
+                                  <Layout className="h-4 w-4" />
+                                  <span>Dashboard</span>
+                                </a>
+                              </Button>
+                            )}
+                            
                             <Button
                               asChild
                               variant="outline"

@@ -41,6 +41,57 @@ export async function getMyProfile() {
   }
 }
 
+export async function updateProviderProfile(updateData: {
+  name?: string;
+  phone?: string;
+  address?: string;
+  image?: string;
+  businessName?: string;
+  description?: string;
+  logo?: string;
+  providerPhone?: string;
+  providerAddress?: string;
+}) {
+  try {
+    console.log("👤 Updating provider profile");
+    console.log("📝 Update data:", updateData);
+    
+    const result = await profileService.updateProviderProfile(
+      updateData,
+      { revalidate: 0, tags: ["profile", "provider-profile"] }
+    );
+
+    if (result.error) {
+      console.error("❌ Failed to update provider profile:", result.error.message);
+      return { 
+        success: false, 
+        error: result.error.message,
+        data: null 
+      };
+    }
+
+    if (result.data) {
+      console.log(`✅ Provider profile updated: ${result.data.name}`);
+      revalidatePath("/dashboard/profile");
+      return { success: true, data: result.data };
+    } else {
+      console.error("❌ No provider profile data returned");
+      return { 
+        success: false, 
+        error: "Failed to update provider profile",
+        data: null 
+      };
+    }
+  } catch (error) {
+    console.error("❌ Unexpected error updating provider profile:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Failed to update provider profile",
+      data: null 
+    };
+  }
+}
+
 export async function updateProfile(updateData: {
   name?: string;
   phone?: string;

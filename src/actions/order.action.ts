@@ -49,6 +49,46 @@ export async function getCustomerOrders(): Promise<{ success: boolean; data: Pag
   }
 }
 
+// Get provider orders (for provider dashboard)
+export async function getProviderOrders(params?: GetOrdersParams): Promise<{ success: boolean; data: PaginatedOrders | null; error: string | null }> {
+  try {
+    console.log("📦 Fetching provider orders");
+    
+    const result = await orderService.getProviderOrders(params, {
+      revalidate: 60,
+      tags: ["provider-orders"],
+    });
+
+    if (result.error) {
+      console.error("❌ Failed to fetch provider orders:", result.error.message);
+      return { 
+        success: false, 
+        error: result.error.message,
+        data: null 
+      };
+    }
+
+    if (result.data) {
+      console.log(`✅ Provider orders loaded: ${result.data.data.length} orders`);
+      return { success: true, data: result.data, error: null };
+    } else {
+      console.error("❌ No provider orders data found");
+      return { 
+        success: false, 
+        error: "Provider orders not found",
+        data: null 
+      };
+    }
+  } catch (error) {
+    console.error("❌ Unexpected error fetching provider orders:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Failed to fetch provider orders",
+      data: null 
+    };
+  }
+}
+
 // Get all orders (for admin dashboard)
 export async function getAllOrders(params?: GetOrdersParams): Promise<{ success: boolean; data: PaginatedOrders | null; error: string | null }> {
   try {
@@ -132,7 +172,7 @@ export async function getOrderDetails(orderId: string): Promise<{ success: boole
 // Create new order
 export async function createOrder(orderData: CreateOrderData): Promise<{ success: boolean; data: Order | null; error: string | null }> {
   try {
-    console.log(`🛒 Creating order with ${orderData.items.length} items`);
+    console.log(`🛒 Creating order for meal: ${orderData.mealId}, quantity: ${orderData.quantity}`);
     
     const result = await orderService.createOrder(
       orderData,

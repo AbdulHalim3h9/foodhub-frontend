@@ -22,8 +22,8 @@ interface Cuisine {
 }
 
 interface FilterSidebarProps {
-  categories: Category[];
-  cuisines: Cuisine[];
+  categories?: Category[] | null;
+  cuisines?: Cuisine[] | null;
   selectedCategories: string[];
   onCategoryToggle: (categoryId: string) => void;
   selectedCuisine: string;
@@ -48,6 +48,8 @@ export function FilterSidebar({
   onMaxPriceChange,
   onClearFilters,
 }: FilterSidebarProps) {
+  const safeCategories = categories ?? [];
+  const safeCuisines = cuisines ?? [];
   return (
     <aside className="w-full lg:w-72 flex-shrink-0 hidden lg:block overflow-hidden transition-all duration-300">
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-7 sticky top-6">
@@ -69,7 +71,7 @@ export function FilterSidebar({
             Categories
           </h4>
           <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-            {categories.map((category) => (
+            {safeCategories.map((category) => (
               <div
                 key={category.id}
                 className="flex items-center space-x-3 group cursor-pointer"
@@ -104,7 +106,7 @@ export function FilterSidebar({
             </SelectTrigger>
             <SelectContent className="rounded-xl border-gray-100 shadow-xl">
               <SelectItem value="all">All Cuisines</SelectItem>
-              {cuisines.map((cuisine) => (
+              {safeCuisines.map((cuisine) => (
                 <SelectItem key={cuisine.id} value={cuisine.name}>
                   {cuisine.name}
                 </SelectItem>

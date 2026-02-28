@@ -38,7 +38,12 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getUsers, updateUserStatus, deleteUser, updateUser } from "@/actions/user.action";
+import {
+  getUsers,
+  updateUserStatus,
+  deleteUser,
+  updateUser,
+} from "@/actions/user.action";
 import { User as UserType, GetUsersParams } from "@/services/user.service";
 
 export default function AdminUsers() {
@@ -61,11 +66,17 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
-    
+
     const params: GetUsersParams = {
       search: searchTerm || undefined,
-      status: statusFilter !== "all" ? statusFilter as "active" | "inactive" | "suspended" : undefined,
-      role: roleFilter !== "all" ? roleFilter as "customer" | "provider" | "admin" : undefined,
+      status:
+        statusFilter !== "all"
+          ? (statusFilter as "active" | "inactive" | "suspended")
+          : undefined,
+      role:
+        roleFilter !== "all"
+          ? (roleFilter as "customer" | "provider" | "admin")
+          : undefined,
       page: pagination.page.toString(),
       limit: pagination.limit.toString(),
     };
@@ -105,7 +116,7 @@ export default function AdminUsers() {
 
   const handleUpdateUser = async () => {
     if (!selectedUser) return;
-    
+
     try {
       const result = await updateUser(selectedUser.id, editFormData);
       if (result.success) {
@@ -136,7 +147,10 @@ export default function AdminUsers() {
     }
   };
 
-  const handleStatusChange = async (userId: string, newStatus: "active" | "inactive" | "suspended") => {
+  const handleStatusChange = async (
+    userId: string,
+    newStatus: "active" | "inactive" | "suspended",
+  ) => {
     try {
       const result = await updateUserStatus(userId, newStatus);
       if (result.success) {
@@ -244,25 +258,25 @@ export default function AdminUsers() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           label="Active Users"
-          value="2"
+          value={users.filter(u => u.status === 'active').length.toString()}
           icon={<Check className="size-5 text-green-600" />}
           className="bg-green-50/50 border-green-100"
         />
         <StatsCard
           label="Suspended"
-          value="1"
+          value={users.filter(u => u.status === 'suspended').length.toString()}
           icon={<X className="size-5 text-red-600" />}
           className="bg-red-50/50 border-red-100"
         />
         <StatsCard
           label="Inactive"
-          value="1"
+          value={users.filter(u => u.status === 'inactive').length.toString()}
           icon={<Clock className="size-5 text-gray-600" />}
           className="bg-gray-50/50 border-gray-100"
         />
         <StatsCard
           label="Total Users"
-          value="4"
+          value={users.length.toString()}
           icon={<User className="size-5 text-blue-600" />}
           className="bg-blue-50/50 border-blue-100"
         />
@@ -331,9 +345,16 @@ export default function AdminUsers() {
                   <TableCell>
                     <Select
                       value={user.status}
-                      onValueChange={(value) => handleStatusChange(user.id, value as "active" | "inactive" | "suspended")}
+                      onValueChange={(value) =>
+                        handleStatusChange(
+                          user.id,
+                          value as "active" | "inactive" | "suspended",
+                        )
+                      }
                     >
-                      <SelectTrigger className={`${getStatusColor(user.status)} flex w-fit items-center gap-1.5 px-2.5 py-0.5 font-normal capitalize border-0 bg-transparent hover:bg-transparent`}>
+                      <SelectTrigger
+                        className={`${getStatusColor(user.status)} flex w-fit items-center gap-1.5 px-2.5 py-0.5 font-normal capitalize border-0 bg-transparent hover:bg-transparent`}
+                      >
                         {getStatusIcon(user.status)}
                         <SelectValue />
                       </SelectTrigger>
@@ -383,7 +404,12 @@ export default function AdminUsers() {
                       >
                         <Eye className="size-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditUser(user)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEditUser(user)}
+                      >
                         <Edit className="size-4" />
                       </Button>
                       <Button
@@ -407,44 +433,62 @@ export default function AdminUsers() {
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between mt-6">
           <div className="text-sm text-muted-foreground">
-            Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
             {pagination.total} users
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+              onClick={() =>
+                setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
+              }
               disabled={pagination.page <= 1}
             >
               <ChevronLeft className="size-4" />
               Previous
             </Button>
             <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                const pageNum = i + 1;
-                const isActive = pageNum === pagination.page;
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={isActive ? "default" : "outline"}
-                    size="sm"
-                    className="size-8 p-0"
-                    onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
+              {Array.from(
+                { length: Math.min(5, pagination.totalPages) },
+                (_, i) => {
+                  const pageNum = i + 1;
+                  const isActive = pageNum === pagination.page;
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={isActive ? "default" : "outline"}
+                      size="sm"
+                      className="size-8 p-0"
+                      onClick={() =>
+                        setPagination((prev) => ({ ...prev, page: pageNum }))
+                      }
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                },
+              )}
               {pagination.totalPages > 5 && (
                 <>
-                  <span className="px-2 text-sm text-muted-foreground">...</span>
+                  <span className="px-2 text-sm text-muted-foreground">
+                    ...
+                  </span>
                   <Button
-                    variant={pagination.page === pagination.totalPages ? "default" : "outline"}
+                    variant={
+                      pagination.page === pagination.totalPages
+                        ? "default"
+                        : "outline"
+                    }
                     size="sm"
                     className="size-8 p-0"
-                    onClick={() => setPagination(prev => ({ ...prev, page: pagination.totalPages }))}
+                    onClick={() =>
+                      setPagination((prev) => ({
+                        ...prev,
+                        page: pagination.totalPages,
+                      }))
+                    }
                   >
                     {pagination.totalPages}
                   </Button>
@@ -454,7 +498,9 @@ export default function AdminUsers() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+              onClick={() =>
+                setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
+              }
               disabled={pagination.page >= pagination.totalPages}
             >
               Next
@@ -490,15 +536,24 @@ export default function AdminUsers() {
                 <div className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Name</label>
+                      <label className="block text-sm font-medium mb-2">
+                        Name
+                      </label>
                       <Input
                         value={editFormData.name || ""}
-                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            name: e.target.value,
+                          })
+                        }
                         placeholder="Enter name"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Email</label>
+                      <label className="block text-sm font-medium mb-2">
+                        Email
+                      </label>
                       <Input
                         value={selectedUser?.email || ""}
                         disabled
@@ -506,26 +561,47 @@ export default function AdminUsers() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Phone</label>
+                      <label className="block text-sm font-medium mb-2">
+                        Phone
+                      </label>
                       <Input
                         value={editFormData.phone || ""}
-                        onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            phone: e.target.value,
+                          })
+                        }
                         placeholder="Enter phone number"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Address</label>
+                      <label className="block text-sm font-medium mb-2">
+                        Address
+                      </label>
                       <Input
                         value={editFormData.address || ""}
-                        onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                        onChange={(e) =>
+                          setEditFormData({
+                            ...editFormData,
+                            address: e.target.value,
+                          })
+                        }
                         placeholder="Enter address"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Role</label>
+                      <label className="block text-sm font-medium mb-2">
+                        Role
+                      </label>
                       <Select
                         value={editFormData.role || ""}
-                        onValueChange={(value) => setEditFormData({ ...editFormData, role: value })}
+                        onValueChange={(value) =>
+                          setEditFormData({
+                            ...editFormData,
+                            role: value as "customer" | "provider" | "admin",
+                          })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select role" />
@@ -538,10 +614,20 @@ export default function AdminUsers() {
                       </Select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Status</label>
+                      <label className="block text-sm font-medium mb-2">
+                        Status
+                      </label>
                       <Select
                         value={editFormData.status || ""}
-                        onValueChange={(value) => setEditFormData({ ...editFormData, status: value })}
+                        onValueChange={(value) =>
+                          setEditFormData({
+                            ...editFormData,
+                            status: value as
+                              | "active"
+                              | "inactive"
+                              | "suspended",
+                          })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -585,8 +671,14 @@ export default function AdminUsers() {
                   <div className="md:col-span-2 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <InfoItem label="Email" value={selectedUser.email} />
-                      <InfoItem label="Phone" value={selectedUser.phone || "Not provided"} />
-                      <InfoItem label="Joined" value={selectedUser.joinDate || selectedUser.createdAt} />
+                      <InfoItem
+                        label="Phone"
+                        value={selectedUser.phone || "Not provided"}
+                      />
+                      <InfoItem
+                        label="Joined"
+                        value={selectedUser.joinDate || selectedUser.createdAt}
+                      />
                       <InfoItem
                         label="Last Login"
                         value={selectedUser.lastLogin || "Never"}
@@ -613,22 +705,25 @@ export default function AdminUsers() {
               )}
 
               <div className="flex justify-end gap-3 mt-8 pt-4 border-t">
-                <Button variant="outline" onClick={() => {
-                  setSelectedUser(null);
-                  setIsEditing(false);
-                  setEditFormData({});
-                }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setIsEditing(false);
+                    setEditFormData({});
+                  }}
+                >
                   {isEditing ? "Cancel" : "Close"}
                 </Button>
                 {isEditing ? (
-                  <Button 
-                    className="bg-orange-600 hover:bg-orange-700" 
+                  <Button
+                    className="bg-orange-600 hover:bg-orange-700"
                     onClick={handleUpdateUser}
                   >
                     Save Changes
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
                     className="bg-orange-600 hover:bg-orange-700"
                     onClick={() => setIsEditing(true)}
                   >

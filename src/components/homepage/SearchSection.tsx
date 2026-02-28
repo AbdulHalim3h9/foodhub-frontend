@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface SearchSectionProps {
   searchTerm?: string;
@@ -14,10 +15,18 @@ export function SearchSection({
   onSearchChange,
 }: SearchSectionProps) {
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+  const router = useRouter();
 
   const handleSearchChange = (value: string) => {
     setLocalSearchTerm(value);
     onSearchChange?.(value);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (localSearchTerm.trim()) {
+      router.push(`/browse?search=${encodeURIComponent(localSearchTerm.trim())}`);
+    }
   };
 
   return (
@@ -31,7 +40,7 @@ export function SearchSection({
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Order from your favorite restaurants and get delivery in minutes
           </p>
-          <div className="relative max-w-2xl mx-auto">
+          <form onSubmit={handleSearchSubmit} className="relative max-w-2xl mx-auto">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
               type="text"
@@ -40,7 +49,7 @@ export function SearchSection({
               value={localSearchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
             />
-          </div>
+          </form>
         </div>
       </div>
     </section>

@@ -167,42 +167,51 @@ export default function AdminDashboard() {
         <Card className="lg:col-span-2 border-none shadow-md">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Recent Orders</CardTitle>
-              <CardDescription>Latest transactions from users.</CardDescription>
+              <CardTitle>All Orders</CardTitle>
+              <CardDescription>All orders in the platform.</CardDescription>
             </div>
             <Link href="/dashboard/orders">
               <Button variant="outline" size="sm" className="text-xs">
-                View All
+                Manage Orders
               </Button>
             </Link>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Order</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stats.recentOrders.map((order: any) => (
-                  <TableRow key={order.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                    <TableCell>{order.customer.name}</TableCell>
-                    <TableCell>{order.provider.businessName}</TableCell>
-                    <TableCell className="font-medium">
-                      ${Number(order.totalAmount).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={order.status} />
-                    </TableCell>
+            <div className="max-h-96 overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Order</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Provider</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {stats.recentOrders.map((order: any) => (
+                    <TableRow key={order.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                      <TableCell>{order.customer?.name || 'N/A'}</TableCell>
+                      <TableCell>{order.provider?.businessName || 'N/A'}</TableCell>
+                      <TableCell className="font-medium">
+                        ${Number(order.totalAmount).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={order.status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {stats.recentOrders.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        No orders found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 

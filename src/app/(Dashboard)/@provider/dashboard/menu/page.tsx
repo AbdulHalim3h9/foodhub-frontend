@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   ToggleLeft,
   ToggleRight,
-  ChefHat
+  ChefHat,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,10 +38,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getMeals, createMeal, updateMeal, deleteMeal, toggleFeatured } from "@/actions/meal.action";
+import { getProviderMeals, createMeal, updateMeal, deleteMeal, toggleFeatured } from "@/actions/meal.action";
 import { GetMealsParams, MealData } from "@/services/meal.service";
 import { getCategories } from "@/actions/category.action";
 import { Category } from "@/services/category.service";
+import MealForm from "@/components/meal/MealForm";
+import { toast } from "sonner";
 
 // Define Meal interface based on backend response
 interface Meal {
@@ -55,11 +58,11 @@ interface Meal {
   cuisine?: string;
   isFeatured?: boolean;
   isAvailable?: boolean;
-  categoryId: string;
+  categoryId?: string | null;
   category?: {
     id: string;
     name: string;
-  };
+  } | null;
   providerId: string;
   createdAt: string;
   updatedAt: string;
@@ -86,6 +89,11 @@ export default function ProviderMenu() {
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  
+  // Edit modal state
+  const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -100,14 +108,20 @@ export default function ProviderMenu() {
   const fetchCategories = async () => {
     setCategoriesLoading(true);
     try {
+      console.log("🔍 Fetching categories...");
       const result = await getCategories();
+      console.log("📊 Categories result:", result);
+      
       if (result.success && result.data) {
-        setCategories(result.data.data || []);
+        console.log("✅ Categories loaded:", result.data);
+        setCategories(result.data);
       } else {
-        console.error("Failed to fetch categories:", result.error);
+        console.error("❌ Failed to fetch categories:", result.error);
+        setCategories([]); // Set empty array instead of hardcoded data
       }
     } catch (err) {
-      console.error("Failed to fetch categories:", err);
+      console.error("❌ Failed to fetch categories:", err);
+      setCategories([]); // Set empty array instead of hardcoded data
     } finally {
       setCategoriesLoading(false);
     }
@@ -123,14 +137,27 @@ export default function ProviderMenu() {
     };
 
     try {
-      const result = await getMeals(params);
+      const result = await getProviderMeals(params);
       if (result.success && result.data) {
         setMeals(result.data.data || []);
+      } else if (result.needsProfile) {
+        // Show profile completion error with link
+        setError(
+          <div className="flex flex-col gap-2">
+            <span>{result.error}</span>
+            <a 
+              href="/dashboard/profile" 
+              className="text-blue-600 hover:text-blue-800 underline font-medium"
+            >
+              Complete your provider profile →
+            </a>
+          </div>
+        );
       } else {
-        setError(result.error || "Failed to fetch meals");
+        setError(result.error || "Failed to fetch provider meals");
       }
     } catch (err) {
-      setError("Failed to fetch meals");
+      setError("Failed to fetch provider meals");
     } finally {
       setLoading(false);
     }
@@ -171,15 +198,76 @@ export default function ProviderMenu() {
     }
   };
 
-  const handleDeleteMeal = async (mealId: string) => {
-    if (window.confirm("Are you sure you want to delete this meal?")) {
-      try {
-        await deleteMeal(mealId);
-        fetchMeals(); // Refresh the list
-      } catch (error) {
-        console.error("Failed to delete meal:", error);
+  const handleDeleteMeal = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this meal?")) return;
+    
+    try {
+      const result = await deleteMeal(id);
+      if (result.success) {
+        toast.success("Meal deleted successfully");
+        fetchMeals();
+      } else {
+        toast.error(result.error || "Failed to delete meal");
       }
+    } catch (error) {
+      toast.error("An error occurred while deleting the meal");
     }
+  };
+
+  const handleCreateMeal = () => {
+    setEditingMeal(null);
+    setShowEditModal(true);
+  };
+
+  const handleCreateMealSubmit = async (mealData: MealData) => {
+    try {
+      setIsSubmitting(true);
+      const result = await createMeal(mealData);
+      
+      if (result.success) {
+        toast.success("Meal created successfully");
+        setShowEditModal(false);
+        fetchMeals();
+      } else {
+        toast.error(result.error || "Failed to create meal");
+      }
+    } catch (error) {
+      toast.error("An error occurred while creating the meal");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditMeal = (meal: Meal) => {
+    setEditingMeal(meal);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateMeal = async (mealData: MealData) => {
+    if (!editingMeal) return;
+    
+    try {
+      setIsSubmitting(true);
+      const result = await updateMeal(editingMeal.id, mealData);
+      
+      if (result.success) {
+        toast.success("Meal updated successfully");
+        setShowEditModal(false);
+        setEditingMeal(null);
+        fetchMeals();
+      } else {
+        toast.error(result.error || "Failed to update meal");
+      }
+    } catch (error) {
+      toast.error("An error occurred while updating the meal");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditModal(false);
+    setEditingMeal(null);
   };
 
   return (
@@ -246,9 +334,9 @@ export default function ProviderMenu() {
               
               {/* Actions */}
               <div className="flex items-center gap-2">
-                <Button 
+                <Button
                   className="bg-orange-500 hover:bg-orange-600"
-                  onClick={() => router.push("/dashboard/menu/create")}
+                  onClick={handleCreateMeal}
                 >
                   <Plus className="size-4 mr-2" />
                   Add New Item
@@ -375,11 +463,17 @@ export default function ProviderMenu() {
                       
                       {/* Item Image */}
                       <div className="relative h-48 bg-gray-100">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            <ChefHat className="size-8" />
+                          </div>
+                        )}
                         <div className="absolute top-3 right-3 flex flex-col gap-2">
                           {item.isFeatured && (
                             <Badge className="bg-yellow-100 text-yellow-800">
@@ -387,9 +481,6 @@ export default function ProviderMenu() {
                               Featured
                             </Badge>
                           )}
-                          <Badge className={getStatusColor(item.isAvailable)}>
-                            {getStatusText(item.isAvailable)}
-                          </Badge>
                         </div>
                       </div>
                     </div>
@@ -468,7 +559,12 @@ export default function ProviderMenu() {
                           <Button variant="outline" size="sm" className="border-gray-200">
                             <Eye className="size-4" />
                           </Button>
-                          <Button variant="outline" size="sm" className="border-gray-200">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-gray-200"
+                            onClick={() => handleEditMeal(item)}
+                          >
                             <Edit className="size-4" />
                           </Button>
                           <Button 
@@ -498,11 +594,17 @@ export default function ProviderMenu() {
                           className="size-4 text-orange-600 focus:ring-orange-500"
                         />
                         
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-16 h-16 rounded-lg object-cover"
-                        />
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-16 h-16 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-500 text-xs">No Image</span>
+                          </div>
+                        )}
                         
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -513,9 +615,6 @@ export default function ProviderMenu() {
                                 Featured
                               </Badge>
                             )}
-                            <Badge className={getStatusColor(item.isAvailable)}>
-                              {getStatusText(item.isAvailable)}
-                            </Badge>
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{item.description}</p>
                           <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -543,7 +642,12 @@ export default function ProviderMenu() {
                         <Button variant="outline" size="sm" className="border-gray-200">
                           <Eye className="size-4" />
                         </Button>
-                        <Button variant="outline" size="sm" className="border-gray-200">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="border-gray-200"
+                          onClick={() => handleEditMeal(item)}
+                        >
                           <Edit className="size-4" />
                         </Button>
                         <Button 
@@ -563,6 +667,36 @@ export default function ProviderMenu() {
           </div>
         </div>
       </div>
+
+      {/* Edit/Create Meal Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold">
+                  {editingMeal ? "Edit Meal" : "Create New Meal"}
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCancelEdit}
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+              
+              <MealForm
+                meal={editingMeal}
+                categories={categories}
+                onSubmit={editingMeal ? handleUpdateMeal : handleCreateMealSubmit}
+                onCancel={handleCancelEdit}
+                loading={isSubmitting}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

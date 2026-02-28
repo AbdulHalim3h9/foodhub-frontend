@@ -68,11 +68,9 @@ const PROVIDER_navMain = [
     icon: Store,
     items: [
       { title: "Dashboard", url: "/dashboard" },
-      { title: "Analytics", url: "/dashboard/analytics" },
       { title: "Menu Items", url: "/dashboard/menu" },
       { title: "Orders", url: "/dashboard/orders" },
       { title: "Profile", url: "/dashboard/profile" },
-      { title: "Settings", url: "/dashboard/settings" },
     ],
   },
 ];

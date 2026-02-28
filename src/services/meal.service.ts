@@ -14,7 +14,7 @@ export interface MealData {
   prepTime?: number;
   cuisineId?: string;
   isFeatured?: boolean;
-  categoryId: string;
+  categoryId?: string;
 }
 
 export interface GetMealsParams {
@@ -101,6 +101,63 @@ class MealService {
     }
   }
 
+  async getProviderMeals(params?: GetMealsParams, options?: ServiceOptions): Promise<{ data: PaginatedMeals | Meal[] | null; error: { message: string } | null }> {
+    try {
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
+
+      const url = new URL(`${this.baseUrl}/provider/meals`);
+
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== "") {
+            url.searchParams.append(key, value);
+          }
+        });
+      }
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        },
+        next: {
+          revalidate: options?.revalidate ?? 60,
+          tags: options?.tags ?? ["provider-meals"],
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Failed to fetch provider meals: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (parseError) {
+          console.log("Could not parse error response, using status text");
+        }
+        
+        return { 
+          data: null, 
+          error: { message: errorMessage } 
+        };
+      }
+
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return { 
+        data: null, 
+        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      };
+    }
+  }
+
   async getMealById(
     params: GetMealByIdParams,
     options?: ServiceOptions,
@@ -143,7 +200,7 @@ class MealService {
     }
   }
 
-  async createMeal(mealData: MealData, authToken?: string): Promise<{ data: Meal | null; error: { message: string } | null }> {
+  async createMeal(mealData: MealData): Promise<{ data: Meal | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
       const cookieHeader = cookieStore
@@ -156,12 +213,12 @@ class MealService {
         headers: {
           "Content-Type": "application/json",
           ...(cookieHeader && { Cookie: cookieHeader }),
-          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
         body: JSON.stringify(mealData),
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
         return { 
           data: null, 
           error: { message: `Failed to create meal: ${response.statusText}` } 
@@ -178,7 +235,7 @@ class MealService {
     }
   }
 
-  async updateMeal(id: string, mealData: Partial<MealData>, authToken?: string): Promise<{ data: Meal | null; error: { message: string } | null }> {
+  async updateMeal(id: string, mealData: Partial<MealData>): Promise<{ data: Meal | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
       const cookieHeader = cookieStore
@@ -191,7 +248,6 @@ class MealService {
         headers: {
           "Content-Type": "application/json",
           ...(cookieHeader && { Cookie: cookieHeader }),
-          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
         body: JSON.stringify(mealData),
       });
@@ -213,7 +269,7 @@ class MealService {
     }
   }
 
-  async deleteMeal(id: string, authToken?: string): Promise<{ success: boolean; error: { message: string } | null }> {
+  async deleteMeal(id: string): Promise<{ success: boolean; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
       const cookieHeader = cookieStore
@@ -226,7 +282,6 @@ class MealService {
         headers: {
           "Content-Type": "application/json",
           ...(cookieHeader && { Cookie: cookieHeader }),
-          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
       });
 
@@ -246,7 +301,7 @@ class MealService {
     }
   }
 
-  async toggleFeatured(id: string, isFeatured: boolean, authToken?: string): Promise<{ data: Meal | null; error: { message: string } | null }> {
+  async toggleFeatured(id: string, isFeatured: boolean): Promise<{ data: Meal | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
       const cookieHeader = cookieStore
@@ -259,7 +314,6 @@ class MealService {
         headers: {
           "Content-Type": "application/json",
           ...(cookieHeader && { Cookie: cookieHeader }),
-          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
         body: JSON.stringify({ isFeatured }),
       });

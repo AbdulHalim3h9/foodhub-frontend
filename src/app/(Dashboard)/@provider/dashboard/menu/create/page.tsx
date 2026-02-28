@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useActionState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Upload, 
-  Plus, 
-  X,
+import {
+  ArrowLeft,
   ChefHat,
   Clock,
   DollarSign,
-  AlertCircle
+  Plus,
+  AlertCircle,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,327 +25,284 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { createMeal } from "@/actions/meal.action";
 import { getCategories } from "@/actions/category.action";
 import { Category } from "@/services/category.service";
 
+import { useEffect, useState } from "react";
+
+// ────────────────────────────────────────────────
+// Type for action response (very recommended)
+type FormState = {
+  success?: boolean;
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  values?: Partial<typeof initialFormData>; // for repopulating on error
+};
+
+// We define initial data outside → easier to reset & type
+const initialFormData = {
+  name: "",
+  description: "",
+  price: "",
+  image: "",
+  ingredients: "",
+  allergens: "",
+  prepTime: "",
+  cuisineId: "",
+  categoryId: "",
+  isFeatured: false,
+} as const;
+
 export default function CreateMenuItem() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    price: "",
-    image: "",
-    ingredients: "",
-    allergens: "",
-    prepTime: "",
-    cuisineId: "",
-    categoryId: "",
-    isFeatured: false,
-  });
+  const [isPending, startTransition] = useTransition();
 
-  // Validation errors
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  // Modern way — useActionState + form action
+  const [state, formAction, isSubmitting] = useActionState<FormState, FormData>(
+    async (prevState: FormState, formData: FormData): Promise<FormState> => {
+      // Optional: you could do light client→server data shaping here
 
-  // Load categories
-  useEffect(() => {
-    const loadCategories = async () => {
       try {
-        const result = await getCategories();
-        if (result.success && result.data) {
-          setCategories(result.data);
-        }
-      } catch (error) {
-        console.error("Failed to load categories:", error);
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
+        const mealData = {
+          name: formData.get("name") as string,
+          description: (formData.get("description") as string) || undefined,
+          price: Number(formData.get("price")),
+          image: (formData.get("image") as string) || undefined,
+          ingredients: (formData.get("ingredients") as string) || undefined,
+          allergens: (formData.get("allergens") as string) || undefined,
+          prepTime: formData.get("prepTime")
+            ? Number(formData.get("prepTime"))
+            : undefined,
+          cuisineId: (formData.get("cuisineId") as string) || undefined,
+          categoryId: (formData.get("categoryId") as string) || undefined,
+          isFeatured: formData.get("isFeatured") === "on",
+        };
 
-    loadCategories();
+        // You should do proper validation here (Zod recommended)
+        if (!mealData.name?.trim()) {
+          return {
+            error: "Validation failed",
+            fieldErrors: { name: "Meal name is required" },
+          };
+        }
+        if (!mealData.price || isNaN(mealData.price) || mealData.price <= 0) {
+          return {
+            error: "Validation failed",
+            fieldErrors: { price: "Valid price is required" },
+          };
+        }
+        const result = await createMeal(mealData);
+
+        if (!result.success) {
+          return { error: result.error ?? "Failed to create meal" };
+        }
+
+        // Success → redirect immediately
+        router.push("/dashboard/menu");
+        router.refresh(); // optional – helps if list is cached
+
+        return { success: true };
+      } catch (err) {
+        console.error(err);
+        return { error: "An unexpected error occurred. Please try again." };
+      }
+    },
+    { success: false } // initial state
+  );
+
+  // Load categories (unchanged)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await getCategories();
+        if (mounted && res.success && res.data) {
+          setCategories(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load categories", err);
+      } finally {
+        if (mounted) setLoadingCategories(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Handle form input changes
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // Clear validation error for this field
-    if (validationErrors[field]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [field]: ""
-      }));
-    }
-  };
-
-  // Validate form
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      errors.name = "Meal name is required";
-    }
-
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      errors.price = "Valid price is required";
-    }
-
-    if (!formData.categoryId) {
-      errors.categoryId = "Category is required";
-    }
-
-    if (formData.prepTime && (parseInt(formData.prepTime) < 0 || parseInt(formData.prepTime) > 999)) {
-      errors.prepTime = "Preparation time must be between 0 and 999 minutes";
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(false);
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const mealData = {
-        name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
-        price: parseFloat(formData.price),
-        image: formData.image.trim() || undefined,
-        ingredients: formData.ingredients.trim() || undefined,
-        allergens: formData.allergens.trim() || undefined,
-        prepTime: formData.prepTime ? parseInt(formData.prepTime) : undefined,
-        cuisineId: formData.cuisineId.trim() || undefined,
-        isFeatured: formData.isFeatured,
-        categoryId: formData.categoryId,
-      };
-
-      const result = await createMeal(mealData);
-
-      if (result.success) {
-        setSuccess(true);
-        // Reset form
-        setFormData({
-          name: "",
-          description: "",
-          price: "",
-          image: "",
-          ingredients: "",
-          allergens: "",
-          prepTime: "",
-          cuisineId: "",
-          categoryId: "",
-          isFeatured: false,
-        });
-        
-        // Redirect after 2 seconds
-        setTimeout(() => {
-          router.push("/dashboard/menu");
-        }, 2000);
-      } else {
-        setError(result.error || "Failed to create meal");
-      }
-    } catch (error) {
-      console.error("Error creating meal:", error);
-      setError("An unexpected error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isLoading = isPending || isSubmitting || loadingCategories;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/dashboard/menu")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Menu
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="mb-4 flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Menu
+        </Button>
+
         <div className="flex items-center gap-3">
           <div className="p-2 bg-orange-100 rounded-lg">
             <ChefHat className="h-6 w-6 text-orange-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Add New Menu Item</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold tracking-tight">Add New Menu Item</h1>
+            <p className="text-muted-foreground mt-1">
               Create a delicious new item for your menu
             </p>
           </div>
         </div>
       </div>
 
-      {/* Success Message */}
-      {success && (
-        <Alert className="mb-6 bg-green-50 border-green-200">
+      {/* Global messages */}
+      {state.error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
+      )}
+
+      {state.success && (
+        <Alert className="mb-6 border-green-200 bg-green-50 text-green-800">
           <AlertCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
-            Menu item created successfully! Redirecting to menu...
-          </AlertDescription>
+          <AlertDescription>Menu item created! Redirecting...</AlertDescription>
         </Alert>
       )}
 
-      {/* Error Message */}
-      {error && (
-        <Alert className="mb-6 bg-red-50 border-red-200">
-          <AlertCircle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">
-            {error}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Basic Information */}
+      <form action={formAction} className="space-y-8">
+        {/* ─── Basic Information ───────────────────────────────────── */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <div className="p-1 bg-blue-100 rounded">
-                <ChefHat className="h-4 w-4 text-blue-600" />
-              </div>
+              <ChefHat className="h-5 w-5 text-blue-600" />
               Basic Information
             </CardTitle>
-            <CardDescription>
-              Essential details about your menu item
-            </CardDescription>
+            <CardDescription>Essential details about your menu item</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
                 <Label htmlFor="name">Meal Name *</Label>
                 <Input
                   id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="e.g., Classic Burger"
-                  className={validationErrors.name ? "border-red-500" : ""}
+                  name="name"
+                  defaultValue={state.values?.name ?? ""}
+                  placeholder="Classic Burger"
+                  required
+                  disabled={isLoading}
+                  className={state.fieldErrors?.name ? "border-destructive" : ""}
                 />
-                {validationErrors.name && (
-                  <p className="text-sm text-red-500 mt-1">{validationErrors.name}</p>
+                {state.fieldErrors?.name && (
+                  <p className="text-sm text-destructive">{state.fieldErrors.name}</p>
                 )}
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="price">Price ($) *</Label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="price"
+                    name="price"
                     type="number"
                     step="0.01"
-                    min="0"
-                    value={formData.price}
-                    onChange={(e) => handleInputChange("price", e.target.value)}
+                    min="0.01"
+                    defaultValue={state.values?.price ?? ""}
                     placeholder="12.99"
-                    className={`pl-10 ${validationErrors.price ? "border-red-500" : ""}`}
+                    required
+                    disabled={isLoading}
+                    className={`pl-10 ${state.fieldErrors?.price ? "border-destructive" : ""}`}
                   />
                 </div>
-                {validationErrors.price && (
-                  <p className="text-sm text-red-500 mt-1">{validationErrors.price}</p>
+                {state.fieldErrors?.price && (
+                  <p className="text-sm text-destructive">{state.fieldErrors.price}</p>
                 )}
               </div>
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
-                placeholder="Describe your meal, ingredients, cooking style, etc."
+                name="description"
+                defaultValue={state.values?.description ?? ""}
+                placeholder="Describe your meal..."
                 rows={3}
+                disabled={isLoading}
               />
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="image">Image URL</Label>
               <Input
                 id="image"
-                value={formData.image}
-                onChange={(e) => handleInputChange("image", e.target.value)}
+                name="image"
+                defaultValue={state.values?.image ?? ""}
                 placeholder="https://example.com/image.jpg"
+                disabled={isLoading}
               />
-              <p className="text-sm text-gray-500 mt-1">
-                Enter a URL to your meal image
+              <p className="text-xs text-muted-foreground">
+                Direct link to a publicly accessible image
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Category & Cuisine */}
+        {/* ─── Category & Cuisine ──────────────────────────────────── */}
         <Card>
           <CardHeader>
             <CardTitle>Category & Cuisine</CardTitle>
-            <CardDescription>
-              Organize your menu item
-            </CardDescription>
+            <CardDescription>Help customers find your dish</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="categoryId">Category *</Label>
-                <Select
-                  value={formData.categoryId}
-                  onValueChange={(value) => handleInputChange("categoryId", value)}
-                >
-                  <SelectTrigger className={validationErrors.categoryId ? "border-red-500" : ""}>
-                    <SelectValue placeholder="Select a category" />
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="categoryId">Category</Label>
+                <Select name="categoryId" defaultValue={state.values?.categoryId ?? ""} disabled={isLoading}>
+                  <SelectTrigger className={state.fieldErrors?.categoryId ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {loadingCategories ? (
-                      <div className="p-2 text-center text-sm text-gray-500">
+                      <div className="py-6 text-center text-sm text-muted-foreground">
                         Loading categories...
                       </div>
                     ) : categories.length === 0 ? (
-                      <div className="p-2 text-center text-sm text-gray-500">
-                        No categories available
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        No categories found
                       </div>
                     ) : (
-                      categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
+                      categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
                         </SelectItem>
                       ))
                     )}
                   </SelectContent>
                 </Select>
-                {validationErrors.categoryId && (
-                  <p className="text-sm text-red-500 mt-1">{validationErrors.categoryId}</p>
+                {state.fieldErrors?.categoryId && (
+                  <p className="text-sm text-destructive">{state.fieldErrors.categoryId}</p>
                 )}
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="cuisineId">Cuisine Type</Label>
                 <Input
                   id="cuisineId"
-                  value={formData.cuisineId}
-                  onChange={(e) => handleInputChange("cuisineId", e.target.value)}
-                  placeholder="e.g., Italian, Mexican, Chinese"
+                  name="cuisineId"
+                  defaultValue={state.values?.cuisineId ?? ""}
+                  placeholder="Italian, Thai, Fusion..."
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -354,95 +310,95 @@ export default function CreateMenuItem() {
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="isFeatured"
-                checked={formData.isFeatured}
-                onCheckedChange={(checked) => handleInputChange("isFeatured", checked as boolean)}
+                name="isFeatured"
+                defaultChecked={state.values?.isFeatured ?? false}
+                disabled={isLoading}
               />
-              <Label htmlFor="isFeatured" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Feature this item on the homepage
+              <Label
+                htmlFor="isFeatured"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Feature this item on homepage
               </Label>
             </div>
           </CardContent>
         </Card>
 
-        {/* Additional Details */}
+        {/* ─── Additional Details ──────────────────────────────────── */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <div className="p-1 bg-green-100 rounded">
-                <Clock className="h-4 w-4 text-green-600" />
-              </div>
+              <Clock className="h-5 w-5 text-green-600" />
               Additional Details
             </CardTitle>
-            <CardDescription>
-              Extra information about your meal
-            </CardDescription>
+            <CardDescription>Helpful info for kitchen & customers</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="prepTime">Preparation Time (minutes)</Label>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="prepTime">Prep Time (minutes)</Label>
                 <Input
                   id="prepTime"
+                  name="prepTime"
                   type="number"
                   min="0"
                   max="999"
-                  value={formData.prepTime}
-                  onChange={(e) => handleInputChange("prepTime", e.target.value)}
-                  placeholder="e.g., 25"
-                  className={validationErrors.prepTime ? "border-red-500" : ""}
+                  defaultValue={state.values?.prepTime ?? ""}
+                  placeholder="25"
+                  disabled={isLoading}
                 />
-                {validationErrors.prepTime && (
-                  <p className="text-sm text-red-500 mt-1">{validationErrors.prepTime}</p>
-                )}
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="allergens">Allergens</Label>
                 <Input
                   id="allergens"
-                  value={formData.allergens}
-                  onChange={(e) => handleInputChange("allergens", e.target.value)}
-                  placeholder="e.g., Nuts, Dairy, Gluten"
+                  name="allergens"
+                  defaultValue={state.values?.allergens ?? ""}
+                  placeholder="Nuts, Dairy, Shellfish..."
+                  disabled={isLoading}
                 />
               </div>
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="ingredients">Ingredients</Label>
               <Textarea
                 id="ingredients"
-                value={formData.ingredients}
-                onChange={(e) => handleInputChange("ingredients", e.target.value)}
-                placeholder="List the main ingredients, separated by commas"
+                name="ingredients"
+                defaultValue={state.values?.ingredients ?? ""}
+                placeholder="Beef patty, cheddar, lettuce, tomato, brioche bun..."
                 rows={3}
+                disabled={isLoading}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Form Actions */}
+        {/* Actions */}
         <div className="flex justify-end gap-4">
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/dashboard/menu")}
-            disabled={loading}
+            onClick={() => router.back()}
+            disabled={isLoading}
           >
             Cancel
           </Button>
+
           <Button
             type="submit"
-            disabled={loading || loadingCategories}
-            className="bg-orange-600 hover:bg-orange-700"
+            disabled={isLoading}
+            className="bg-orange-600 hover:bg-orange-700 min-w-[160px]"
           >
-            {loading ? (
+            {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <span className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
                 Creating...
               </>
             ) : (
               <>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Add Menu Item
               </>
             )}

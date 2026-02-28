@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   User, 
   MapPin, 
@@ -21,6 +21,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -28,50 +31,148 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getMyProfile, updateProviderProfile } from "@/actions/profile.action";
+import { UserProfile } from "@/services/profile.service";
+import { toast } from "sonner";
 
 export default function ProviderProfile() {
   const [isEditing, setIsEditing] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    restaurantName: "Mario's Pizza",
-    email: "mario@foodhub.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Pizza Street, Culinary District, NY 10001",
-    description: "Authentic Italian cuisine with fresh ingredients and traditional recipes. Serving the community since 2020 with passion and dedication to quality.",
-    cuisine: "italian",
-    deliveryRadius: "5",
-    minOrder: "15",
-    avgPrepTime: "25-30",
-    openingHours: "11:00 AM - 10:00 PM",
-    logo: "https://images.unsplash.com/photo-1555396273-367ea4eb4db7?w=100",
-    website: "www.mariospizza.com",
-    socialMedia: {
-      facebook: "mariospizza",
-      instagram: "@mariospizza_ny",
-      twitter: "mariospizza_ny"
-    }
+    // User profile fields
+    name: "",
+    phone: "",
+    address: "",
+    image: "",
+    
+    // Provider profile fields
+    businessName: "",
+    description: "",
+    logo: "",
+    providerPhone: "",
+    providerAddress: "",
+    website: "",
+    cuisine: "",
+    openingHours: "",
   });
 
-  const handleSave = () => {
-    console.log("Saving profile:", formData);
-    setIsEditing(false);
-  };
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      console.log("Uploading logo:", file.name);
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const result = await getMyProfile();
+      
+      if (result.success && result.data) {
+        setProfile(result.data);
+        
+        // Set form data with both user and provider profile data
+        setFormData({
+          name: result.data.name || "",
+          phone: result.data.phone || "",
+          address: result.data.address || "",
+          image: result.data.image || "",
+          businessName: result.data.providerProfile?.businessName || "",
+          description: result.data.providerProfile?.description || "",
+          logo: result.data.providerProfile?.logo || "",
+          providerPhone: result.data.providerProfile?.phone || "",
+          providerAddress: result.data.providerProfile?.address || "",
+          website: result.data.providerProfile?.website || "",
+          cuisine: result.data.providerProfile?.cuisine || "",
+          openingHours: result.data.providerProfile?.openingHours || "",
+        });
+      } else {
+        toast.error(result.error || "Failed to load profile");
+      }
+    } catch (error) {
+      toast.error("Error loading profile");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const stats = {
-    totalRevenue: 4850,
-    totalOrders: 245,
-    activeItems: 8,
-    avgRating: 4.7,
-    customers: 1234,
-    prepTime: 25,
-    orderValue: 19.80
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      
+      const updateData = {
+        // User profile fields
+        name: formData.name || undefined,
+        phone: formData.phone || undefined,
+        address: formData.address || undefined,
+        image: formData.image || undefined,
+        
+        // Provider profile fields
+        businessName: formData.businessName || undefined,
+        description: formData.description || undefined,
+        logo: formData.logo || undefined,
+        providerPhone: formData.providerPhone || undefined,
+        providerAddress: formData.providerAddress || undefined,
+        website: formData.website || undefined,
+        cuisine: formData.cuisine || undefined,
+        openingHours: formData.openingHours || undefined,
+      };
+
+      const result = await updateProviderProfile(updateData);
+      
+      if (result.success && result.data) {
+        setProfile(result.data);
+        setIsEditing(false);
+        toast.success("Provider profile updated successfully!");
+      } else {
+        toast.error(result.error || "Failed to update profile");
+      }
+    } catch (error) {
+      toast.error("Error updating profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleEditMode = () => {
+    setIsEditing(!isEditing);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'image' | 'logo') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          [field]: reader.result as string
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+            <div className="space-y-6">
+              <div className="bg-gray-200 rounded-lg h-64"></div>
+              <div className="bg-gray-200 rounded-lg h-64"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,14 +182,43 @@ export default function ProviderProfile() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-900">Restaurant Profile</h1>
             <div className="flex items-center gap-3">
-              <Button
-                onClick={() => setIsEditing(!isEditing)}
-                variant={isEditing ? "default" : "outline"}
-                className={isEditing ? "bg-orange-500 hover:bg-orange-600" : "border-gray-200"}
-              >
-                {isEditing ? <Save className="size-4 mr-2" /> : <Edit className="size-4 mr-2" />}
-                {isEditing ? "Save Changes" : "Edit Profile"}
-              </Button>
+              {!isEditing ? (
+                <Button
+                  onClick={toggleEditMode}
+                  variant="outline"
+                  className="border-gray-200"
+                >
+                  <Edit className="size-4 mr-2" />
+                  Edit Profile
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="bg-orange-500 hover:bg-orange-600"
+                  >
+                    {saving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="size-4 mr-2" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={toggleEditMode}
+                    className="border-gray-200"
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -97,357 +227,267 @@ export default function ProviderProfile() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Restaurant Info */}
+          {/* User & Restaurant Info */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Restaurant Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Logo Upload */}
-              <div className="flex items-center justify-center mb-6">
-                <div className="relative">
-                  <img
-                    src={formData.logo}
-                    alt="Restaurant Logo"
-                    className="w-24 h-24 rounded-lg object-cover"
-                  />
-                  <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg cursor-pointer opacity-0 hover:opacity-100 transition-opacity">
-                    <Upload className="size-8 text-white" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Basic Info */}
+              {/* Profile Pictures */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Restaurant Name
-                  </label>
-                  <Input
-                    value={formData.restaurantName}
-                    onChange={(e) => setFormData({...formData, restaurantName: e.target.value})}
-                    disabled={!isEditing}
-                    className="w-full"
-                  />
+                {/* User Profile Picture */}
+                <div className="text-center">
+                  <Label className="block text-sm font-medium text-gray-700 mb-2">Your Photo</Label>
+                  <div className="flex flex-col items-center space-y-4">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage src={formData.image} alt={formData.name} />
+                      <AvatarFallback className="text-2xl">
+                        {formData.name?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="w-full">
+                      <input
+                        type="file"
+                        id="user-image"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'image')}
+                        className="hidden"
+                        disabled={!isEditing}
+                      />
+                      <Label htmlFor="user-image" className={`cursor-pointer ${!isEditing && 'opacity-50 cursor-not-allowed'}`}>
+                        <Button variant="outline" className="w-full" asChild disabled={!isEditing}>
+                          <span className="flex items-center gap-2">
+                            <Upload className="h-4 w-4" />
+                            Upload Photo
+                          </span>
+                        </Button>
+                      </Label>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
-                  </label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    disabled={!isEditing}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
-                  <Input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    disabled={!isEditing}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Website
-                  </label>
-                  <Input
-                    type="url"
-                    value={formData.website}
-                    onChange={(e) => setFormData({...formData, website: e.target.value})}
-                    disabled={!isEditing}
-                    className="w-full"
-                    placeholder="www.yourrestaurant.com"
-                  />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
-                  </label>
-                  <Input
-                    value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
-                    disabled={!isEditing}
-                    className="w-full"
-                  />
+                {/* Restaurant Logo */}
+                <div className="text-center">
+                  <Label className="block text-sm font-medium text-gray-700 mb-2">Restaurant Logo</Label>
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="relative">
+                      <Avatar className="h-20 w-20 rounded-lg">
+                        <AvatarImage src={formData.logo} alt={formData.businessName} />
+                        <AvatarFallback className="text-2xl rounded-lg">
+                          {formData.businessName?.charAt(0).toUpperCase() || "R"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    
+                    <div className="w-full">
+                      <input
+                        type="file"
+                        id="restaurant-logo"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'logo')}
+                        className="hidden"
+                        disabled={!isEditing}
+                      />
+                      <Label htmlFor="restaurant-logo" className={`cursor-pointer ${!isEditing && 'opacity-50 cursor-not-allowed'}`}>
+                        <Button variant="outline" className="w-full" asChild disabled={!isEditing}>
+                          <span className="flex items-center gap-2">
+                            <Upload className="h-4 w-4" />
+                            Upload Logo
+                          </span>
+                        </Button>
+                      </Label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Restaurant Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  disabled={!isEditing}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
-                  placeholder="Tell customers about your restaurant..."
+              {/* User Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 border-t pt-4">Personal Information</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Your Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Enter your name"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      value={profile?.email || ""}
+                      disabled
+                      className="bg-gray-50"
+                      placeholder="Email cannot be changed"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="phone">Your Phone</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Your phone number"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="address">Your Address</Label>
+                    <Input
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) => handleInputChange("address", e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Your address"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Restaurant Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 border-t pt-4">Restaurant Information</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="businessName">Restaurant Name</Label>
+                    <Input
+                      id="businessName"
+                      value={formData.businessName}
+                      onChange={(e) => handleInputChange("businessName", e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Restaurant name"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="providerPhone">Restaurant Phone</Label>
+                    <Input
+                      id="providerPhone"
+                      value={formData.providerPhone}
+                      onChange={(e) => handleInputChange("providerPhone", e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Restaurant phone number"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Label htmlFor="providerAddress">Restaurant Address</Label>
+                    <Input
+                      id="providerAddress"
+                      value={formData.providerAddress}
+                      onChange={(e) => handleInputChange("providerAddress", e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Restaurant address"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="description">Restaurant Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    disabled={!isEditing}
+                    rows={4}
+                    placeholder="Tell customers about your restaurant..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      value={formData.website}
+                      onChange={(e) => handleInputChange("website", e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="www.yourrestaurant.com"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="cuisine">Cuisine Type</Label>
+                    <Select
+                      value={formData.cuisine}
+                      onValueChange={(value) => handleInputChange("cuisine", value)}
+                      disabled={!isEditing}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select cuisine type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="italian">Italian</SelectItem>
+                        <SelectItem value="american">American</SelectItem>
+                        <SelectItem value="asian">Asian</SelectItem>
+                        <SelectItem value="mexican">Mexican</SelectItem>
+                        <SelectItem value="indian">Indian</SelectItem>
+                        <SelectItem value="mediterranean">Mediterranean</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="openingHours">Opening Hours</Label>
+                    <Input
+                      id="openingHours"
+                      value={formData.openingHours}
+                      onChange={(e) => handleInputChange("openingHours", e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Mon-Fri: 11AM-10PM, Sat-Sun: 10AM-11PM"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Account Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Account Type</Label>
+                <Input
+                  value={profile?.role || "PROVIDER"}
+                  className="bg-gray-50"
+                  disabled
+                />
+              </div>
+              
+              <div>
+                <Label>Member Since</Label>
+                <Input
+                  value={profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : ""}
+                  className="bg-gray-50"
+                  disabled
                 />
               </div>
 
-              {/* Social Media */}
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Social Media
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-xs text-gray-600">Facebook</label>
-                    <Input
-                      value={formData.socialMedia.facebook}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        socialMedia: {...formData.socialMedia, facebook: e.target.value}
-                      })}
-                      disabled={!isEditing}
-                      placeholder="username"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-xs text-gray-600">Instagram</label>
-                    <Input
-                      value={formData.socialMedia.instagram}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        socialMedia: {...formData.socialMedia, instagram: e.target.value}
-                      })}
-                      disabled={!isEditing}
-                      placeholder="@username"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-xs text-gray-600">Twitter</label>
-                    <Input
-                      value={formData.socialMedia.twitter}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        socialMedia: {...formData.socialMedia, twitter: e.target.value}
-                      })}
-                      disabled={!isEditing}
-                      placeholder="@username"
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Business Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Business Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Cuisine Type
-                  </label>
-                  <Select value={formData.cuisine} disabled={!isEditing}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="italian">Italian</SelectItem>
-                      <SelectItem value="asian">Asian</SelectItem>
-                      <SelectItem value="american">American</SelectItem>
-                      <SelectItem value="mexican">Mexican</SelectItem>
-                      <SelectItem value="indian">Indian</SelectItem>
-                      <SelectItem value="mediterranean">Mediterranean</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Delivery Radius
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={formData.deliveryRadius}
-                      onChange={(e) => setFormData({...formData, deliveryRadius: e.target.value})}
-                      disabled={!isEditing}
-                      className="flex-1"
-                      min="1"
-                      max="20"
-                    />
-                    <span className="text-sm text-gray-600">miles</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Minimum Order Amount
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600">$</span>
-                    <Input
-                      type="number"
-                      value={formData.minOrder}
-                      onChange={(e) => setFormData({...formData, minOrder: e.target.value})}
-                      disabled={!isEditing}
-                      className="flex-1"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Average Prep Time
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="text"
-                      value={formData.avgPrepTime}
-                      onChange={(e) => setFormData({...formData, avgPrepTime: e.target.value})}
-                      disabled={!isEditing}
-                      className="flex-1"
-                      placeholder="e.g., 25-30 min"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Opening Hours
-                  </label>
-                  <Input
-                    value={formData.openingHours}
-                    onChange={(e) => setFormData({...formData, openingHours: e.target.value})}
-                    disabled={!isEditing}
-                    className="w-full"
-                    placeholder="e.g., 11:00 AM - 10:00 PM"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Performance Stats */}
-          <Card className="lg:col-span-3">
-            <CardHeader>
-              <CardTitle>Performance Statistics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="text-center p-6 bg-orange-50 rounded-lg">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 text-orange-600 mb-4">
-                    <DollarSign className="size-6" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">${stats.totalRevenue.toLocaleString()}</p>
-                  <p className="text-sm text-gray-600">Total Revenue</p>
-                  <p className="text-xs text-gray-500 mt-1">All time earnings</p>
-                </div>
-
-                <div className="text-center p-6 bg-blue-50 rounded-lg">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-4">
-                    <ShoppingCart className="size-6" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
-                  <p className="text-sm text-gray-600">Total Orders</p>
-                  <p className="text-xs text-gray-500 mt-1">All time orders</p>
-                </div>
-
-                <div className="text-center p-6 bg-green-50 rounded-lg">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-4">
-                    <Package className="size-6" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.activeItems}</p>
-                  <p className="text-sm text-gray-600">Active Items</p>
-                  <p className="text-xs text-gray-500 mt-1">Menu items available</p>
-                </div>
-
-                <div className="text-center p-6 bg-purple-50 rounded-lg">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 text-purple-600 mb-4">
-                    <Star className="size-6" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.avgRating}</p>
-                  <p className="text-sm text-gray-600">Average Rating</p>
-                  <p className="text-xs text-gray-500 mt-1">Based on customer reviews</p>
-                </div>
-
-                <div className="text-center p-6 bg-yellow-50 rounded-lg">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 mb-4">
-                    <User className="size-6" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.customers.toLocaleString()}</p>
-                  <p className="text-sm text-gray-600">Total Customers</p>
-                  <p className="text-xs text-gray-500 mt-1">Unique customers served</p>
-                </div>
-
-                <div className="text-center p-6 bg-red-50 rounded-lg">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mb-4">
-                    <Clock className="size-6" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.prepTime} min</p>
-                  <p className="text-sm text-gray-600">Avg. Prep Time</p>
-                  <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
-                </div>
-
-                <div className="text-center p-6 bg-indigo-50 rounded-lg">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 mb-4">
-                    <DollarSign className="size-6" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">${stats.orderValue.toFixed(2)}</p>
-                  <p className="text-sm text-gray-600">Avg. Order Value</p>
-                  <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
-                </div>
-
-                <div className="text-center p-6 bg-teal-50 rounded-lg">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-teal-100 text-teal-600 mb-4">
-                    <Shield className="size-6" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">Verified</p>
-                  <p className="text-sm text-gray-600">Verification Status</p>
-                  <p className="text-xs text-gray-500 mt-1">Restaurant is verified</p>
-                </div>
+              <div>
+                <Label>Provider Status</Label>
+                <Input
+                  value={profile?.providerProfile?.isActive ? "Active" : "Pending Approval"}
+                  className={`bg-gray-50 ${profile?.providerProfile?.isActive ? 'text-green-600' : 'text-yellow-600'}`}
+                  disabled
+                />
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Action Buttons */}
-        {isEditing && (
-          <div className="flex justify-center gap-4 mt-8">
-            <Button
-              onClick={handleSave}
-              className="bg-orange-500 hover:bg-orange-600 px-8"
-            >
-              <Save className="size-4 mr-2" />
-              Save Profile
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditing(false)}
-              className="border-gray-200 px-8"
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

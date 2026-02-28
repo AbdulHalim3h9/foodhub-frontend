@@ -72,11 +72,11 @@ export default function BrowsePage() {
         ]);
 
         if (categoriesResult.success && categoriesResult.data) {
-          setCategories(categoriesResult.data.data || []);
+          setCategories(categoriesResult.data);
         }
 
         if (cuisinesResult.success && cuisinesResult.data) {
-          setCuisines(cuisinesResult.data.data || []);
+          setCuisines(cuisinesResult.data);
         }
       } catch (error) {
         console.error("Failed to fetch initial data:", error);
@@ -106,8 +106,21 @@ export default function BrowsePage() {
 
         const result = await getMeals(queryParams);
         if (result.success && result.data) {
-          setMeals(result.data.data?.data || []);
-          setTotalMeals(result.data.data?.total || 0);
+          const serviceResult: any = result.data;
+          const apiPayload: any = serviceResult?.data;
+
+          const mealsArray: Meal[] = Array.isArray(apiPayload)
+            ? apiPayload
+            : Array.isArray(apiPayload?.data)
+              ? apiPayload.data
+              : [];
+
+          const total: number = typeof apiPayload?.pagination?.total === "number"
+            ? apiPayload.pagination.total
+            : mealsArray.length;
+
+          setMeals(mealsArray);
+          setTotalMeals(total);
         }
       } catch (error) {
         console.error("Failed to fetch meals:", error);
@@ -194,12 +207,6 @@ export default function BrowsePage() {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      {/* Debug Info */}
-      <div className="bg-yellow-50 border-b border-yellow-200 p-2 text-xs">
-        Debug: Categories loaded: {categories.length} | Selected:{" "}
-        {selectedCategories.join(", ")}
-      </div>
-
       <BrowseHeader
         searchTerm={searchTerm}
         onSearchChange={handleSearch}

@@ -25,6 +25,7 @@ import { getMealById } from "@/actions/meal.action";
 import { addItemToCart } from "@/actions/cart.action";
 import { createOrder } from "@/actions/order.action";
 import { getCurrentUserProfile } from "@/actions/current-user.action";
+import { getMealReviews } from "@/actions/review.action";
 
 interface MealDetailsPageProps {
   params: Promise<{
@@ -42,7 +43,10 @@ export default function MealDetailsPage({ params }: MealDetailsPageProps) {
   const [cartMessage, setCartMessage] = useState<string | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   const [orderForm, setOrderForm] = useState({
     deliveryAddress: "",
     deliveryPhone: "",
@@ -55,6 +59,41 @@ export default function MealDetailsPage({ params }: MealDetailsPageProps) {
   useEffect(() => {
     fetchMeal();
   }, [slug]);
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const result = await getCurrentUserProfile();
+        if (result.success && result.data?.role) {
+          setCurrentUserRole(result.data.role);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchRole();
+  }, []);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!meal) return;
+      
+      try {
+        setLoadingReviews(true);
+        const result = await getMealReviews(meal.id);
+        if (result.success && result.data) {
+          setReviews(result.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+
+    fetchReviews();
+  }, [meal]);
 
   const fetchMeal = async () => {
     try {
@@ -117,6 +156,12 @@ export default function MealDetailsPage({ params }: MealDetailsPageProps) {
 
   const handleOrderNow = () => {
     if (!meal) return;
+
+    if (currentUserRole === "PROVIDER" || currentUserRole === "ADMIN") {
+      setCartMessage("❌ Providers/Admins cannot place orders. Please login as a customer.");
+      setTimeout(() => setCartMessage(null), 3000);
+      return;
+    }
     
     // Fetch user profile and show order modal
     fetchUserProfile();
@@ -125,6 +170,12 @@ export default function MealDetailsPage({ params }: MealDetailsPageProps) {
 
   const handleCreateOrder = async () => {
     if (!meal) return;
+
+    if (currentUserRole === "PROVIDER" || currentUserRole === "ADMIN") {
+      setCartMessage("❌ Providers/Admins cannot place orders. Please login as a customer.");
+      setTimeout(() => setCartMessage(null), 3000);
+      return;
+    }
     
     // Validate form
     if (!orderForm.deliveryAddress.trim()) {
@@ -147,10 +198,8 @@ export default function MealDetailsPage({ params }: MealDetailsPageProps) {
       
       // Create order directly
       const result = await createOrder({
-        items: [{
-          mealId: meal.id,
-          quantity: quantity
-        }],
+        mealId: meal.id,
+        quantity,
         deliveryAddress: orderForm.deliveryAddress,
         deliveryPhone: orderForm.deliveryPhone,
         specialInstructions: orderForm.specialInstructions
@@ -191,6 +240,12 @@ export default function MealDetailsPage({ params }: MealDetailsPageProps) {
 
   const handleAddToOrder = async () => {
     if (!meal) return;
+
+    if (currentUserRole === "PROVIDER" || currentUserRole === "ADMIN") {
+      setCartMessage("❌ Providers/Admins cannot add items to cart. Please login as a customer.");
+      setTimeout(() => setCartMessage(null), 3000);
+      return;
+    }
     
     try {
       setAddingToCart(true);
@@ -452,6 +507,58 @@ export default function MealDetailsPage({ params }: MealDetailsPageProps) {
                 </CardContent>
               </Card>
             )}
+
+            {/* Reviews Section */}
+            <Card>
+              <CardHeader>
+                <h2 className="text-xl font-semibold text-gray-900">Customer Reviews</h2>
+              </CardHeader>
+              <CardContent>
+                {loadingReviews ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                  </div>
+                ) : reviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="border-b pb-4 last:border-b-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="flex">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`h-4 w-4 ${
+                                      star <= review.rating
+                                        ? "text-yellow-500 fill-yellow-500"
+                                        : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="font-medium text-gray-900">
+                                {review.customer?.name || "Anonymous"}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                {new Date(review.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {review.comment && (
+                              <p className="text-gray-700 mt-2">{review.comment}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No reviews yet. Be the first to review this meal!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right Column - Order Section */}
@@ -527,7 +634,7 @@ export default function MealDetailsPage({ params }: MealDetailsPageProps) {
                     {/* Add to Cart Button */}
                     <Button
                       onClick={handleAddToOrder}
-                      disabled={addingToCart || orderingNow || !meal?.isAvailable}
+                      disabled={addingToCart || orderingNow || currentUserRole === "PROVIDER" || currentUserRole === "ADMIN"}
                       className="h-12 text-base font-semibold"
                       variant="outline"
                     >
@@ -547,7 +654,7 @@ export default function MealDetailsPage({ params }: MealDetailsPageProps) {
                     {/* Order Now Button */}
                     <Button
                       onClick={handleOrderNow}
-                      disabled={addingToCart || orderingNow || !meal?.isAvailable}
+                      disabled={addingToCart || orderingNow || currentUserRole === "PROVIDER" || currentUserRole === "ADMIN"}
                       className="h-12 text-base font-semibold bg-orange-600 hover:bg-orange-700"
                     >
                       {orderingNow ? (
@@ -730,7 +837,7 @@ export default function MealDetailsPage({ params }: MealDetailsPageProps) {
             <div className="space-y-3 pt-4 border-t">
               <Button
                 onClick={handleCreateOrder}
-                disabled={orderingNow || !meal?.isAvailable}
+                disabled={orderingNow}
                 className="w-full h-12 text-base font-semibold bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white shadow-lg"
               >
                 {orderingNow ? (

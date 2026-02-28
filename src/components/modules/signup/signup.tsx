@@ -3,6 +3,14 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Field,
   FieldError,
@@ -39,6 +47,7 @@ export function Signup({
       address: "",
       password: "",
       confirmPassword: "",
+      role: "CUSTOMER",
     },
     validators: {
       onSubmit: registerSchema,
@@ -56,6 +65,8 @@ export function Signup({
           phone: value.phone,
           // @ts-ignore
           address: value.address,
+          // Add role based on selected role
+          role: value.role,
         });
 
         if (error) {
@@ -70,7 +81,7 @@ export function Signup({
         // Redirect based on user role
         if ((data.user as any).role === "CUSTOMER") {
           router.push("/browse");
-        } else {
+        } else if ((data.user as any).role === "PROVIDER") {
           router.push("/dashboard");
         }
         router.refresh();
@@ -136,7 +147,7 @@ export function Signup({
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>Email Address</FieldLabel>
                       <Input
                         type="email"
                         id={field.name}
@@ -162,7 +173,7 @@ export function Signup({
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Phone</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>Phone Number</FieldLabel>
                       <Input
                         type="tel"
                         id={field.name}
@@ -186,15 +197,45 @@ export function Signup({
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Address</FieldLabel>
-                      <Input
-                        type="text"
+                      <FieldLabel htmlFor={field.name}>Delivery Address</FieldLabel>
+                      <Textarea
                         id={field.name}
                         name={field.name}
                         value={field.state.value}
                         onChange={(e) => field.handleChange(e.target.value)}
                         placeholder="123 Main St, City, State"
+                        rows={3}
                       />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  );
+                }}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <form.Field
+                name="role"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid;
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>I want to sign up as</FieldLabel>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={(value) => field.handleChange(value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="CUSTOMER">Customer - I want to order food</SelectItem>
+                          <SelectItem value="PROVIDER">Provider - I want to sell food</SelectItem>
+                        </SelectContent>
+                      </Select>
                       {isInvalid && (
                         <FieldError errors={field.state.meta.errors} />
                       )}

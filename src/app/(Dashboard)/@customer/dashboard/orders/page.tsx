@@ -35,25 +35,39 @@ export default function CustomerOrders() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "PENDING": return "bg-yellow-100 text-yellow-800";
-      case "CONFIRMED": return "bg-blue-100 text-blue-800";
-      case "PREPARING": return "bg-orange-100 text-orange-800";
-      case "READY": return "bg-green-100 text-green-800";
-      case "COMPLETED": return "bg-gray-100 text-gray-800";
-      case "CANCELLED": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "CONFIRMED":
+        return "bg-blue-100 text-blue-800";
+      case "PREPARING":
+        return "bg-orange-100 text-orange-800";
+      case "READY":
+        return "bg-green-100 text-green-800";
+      case "COMPLETED":
+        return "bg-gray-100 text-gray-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "PENDING": return <Clock className="h-4 w-4" />;
-      case "CONFIRMED": return <CheckCircle className="h-4 w-4" />;
-      case "PREPARING": return <ChefHat className="h-4 w-4" />;
-      case "READY": return <Truck className="h-4 w-4" />;
-      case "COMPLETED": return <CheckCircle className="h-4 w-4" />;
-      case "CANCELLED": return <Package className="h-4 w-4" />;
-      default: return <Package className="h-4 w-4" />;
+      case "PENDING":
+        return <Clock className="h-4 w-4" />;
+      case "CONFIRMED":
+        return <CheckCircle className="h-4 w-4" />;
+      case "PREPARING":
+        return <ChefHat className="h-4 w-4" />;
+      case "READY":
+        return <Truck className="h-4 w-4" />;
+      case "COMPLETED":
+        return <CheckCircle className="h-4 w-4" />;
+      case "CANCELLED":
+        return <Package className="h-4 w-4" />;
+      default:
+        return <Package className="h-4 w-4" />;
     }
   };
 
@@ -77,9 +91,12 @@ export default function CustomerOrders() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center py-16">
           <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">No orders yet</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            No orders yet
+          </h1>
           <p className="text-gray-600 mb-8">
-            You haven't placed any orders yet. Start browsing meals and add them to your cart!
+            You haven't placed any orders yet. Start browsing meals and add them
+            to your cart!
           </p>
           <Button asChild className="bg-orange-500 hover:bg-orange-600">
             <a href="/browse" className="flex items-center gap-2">
@@ -98,7 +115,8 @@ export default function CustomerOrders() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Orders</h1>
         <p className="text-gray-600">
-          {orders.pagination.total} {orders.pagination.total === 1 ? 'order' : 'orders'} placed
+          {orders.pagination.total}{" "}
+          {orders.pagination.total === 1 ? "order" : "orders"} placed
         </p>
       </div>
 
@@ -115,14 +133,18 @@ export default function CustomerOrders() {
                       <span className="ml-2">{order.status}</span>
                     </Badge>
                     <div>
-                      <p className="font-semibold text-gray-900">#{order.orderNumber}</p>
+                      <p className="font-semibold text-gray-900">
+                        #{order.orderNumber}
+                      </p>
                       <p className="text-sm text-gray-500">
                         {new Date(order.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-gray-900">${order.totalAmount}</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      ${order.totalAmount}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -131,28 +153,52 @@ export default function CustomerOrders() {
               <div className="space-y-3">
                 {/* Delivery Info */}
                 <div className="border-b pb-3">
-                  <h3 className="font-medium text-gray-900 mb-2">Delivery Information</h3>
+                  <h3 className="font-medium text-gray-900 mb-2">
+                    Delivery Information
+                  </h3>
                   <div className="space-y-1 text-sm">
-                    <p><strong>Address:</strong> {order.deliveryAddress}</p>
-                    <p><strong>Phone:</strong> {order.deliveryPhone}</p>
+                    <p>
+                      <strong>Address:</strong> {order.deliveryAddress}
+                    </p>
+                    <p>
+                      <strong>Phone:</strong> {order.deliveryPhone}
+                    </p>
                     {order.specialInstructions && (
-                      <p><strong>Special Instructions:</strong> {order.specialInstructions}</p>
+                      <p>
+                        <strong>Special Instructions:</strong>{" "}
+                        {order.specialInstructions}
+                      </p>
                     )}
                   </div>
                 </div>
 
                 {/* Order Items */}
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Order Items</h3>
+                  <h3 className="font-medium text-gray-900 mb-2">
+                    Order Items
+                  </h3>
                   <div className="space-y-2">
-                    {order.items.map((item: any, index: number) => (
-                      <div key={item.id} className="flex items-center gap-3 pb-2 border-b last:border-b-0">
-                        <span className="text-sm text-gray-600 min-w-0">x{item.quantity}</span>
+                    {(order.items || []).map((item: any, index: number) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 pb-2 border-b last:border-b-0"
+                      >
+                        <span className="text-sm text-gray-600 min-w-0">
+                          x{item.quantity}
+                        </span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900">{item.meal.name}</p>
-                          <p className="text-sm text-gray-500">${item.totalPrice}</p>
+                          <p className="font-medium text-gray-900">
+                            {item.meal.name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            ${item.totalPrice}
+                          </p>
                         </div>
-                        <p className="text-sm font-medium text-gray-900">${item.totalPrice}</p>
+                        <div className="flex items-center gap-3">
+                          <p className="text-sm font-medium text-gray-900">
+                            ${item.totalPrice}
+                          </p>
+                                                  </div>
                       </div>
                     ))}
                   </div>
@@ -188,7 +234,7 @@ export default function CustomerOrders() {
                 ×
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               {/* Order Status */}
               <div className="flex items-center gap-3">
@@ -197,9 +243,12 @@ export default function CustomerOrders() {
                   <span className="ml-2">{selectedOrder.status}</span>
                 </Badge>
                 <div>
-                  <p className="font-semibold text-gray-900">#{selectedOrder.orderNumber}</p>
+                  <p className="font-semibold text-gray-900">
+                    #{selectedOrder.orderNumber}
+                  </p>
                   <p className="text-sm text-gray-500">
-                    Placed on {new Date(selectedOrder.createdAt).toLocaleDateString()}
+                    Placed on{" "}
+                    {new Date(selectedOrder.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -207,29 +256,53 @@ export default function CustomerOrders() {
               {/* Delivery and Items Info */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Delivery Information</h3>
+                  <h3 className="font-medium text-gray-900 mb-2">
+                    Delivery Information
+                  </h3>
                   <div className="space-y-1 text-sm bg-gray-50 p-3 rounded">
-                    <p><strong>Address:</strong> {selectedOrder.deliveryAddress}</p>
-                    <p><strong>Phone:</strong> {selectedOrder.deliveryPhone}</p>
+                    <p>
+                      <strong>Address:</strong> {selectedOrder.deliveryAddress}
+                    </p>
+                    <p>
+                      <strong>Phone:</strong> {selectedOrder.deliveryPhone}
+                    </p>
                     {selectedOrder.specialInstructions && (
-                      <p><strong>Special Instructions:</strong> {selectedOrder.specialInstructions}</p>
+                      <p>
+                        <strong>Special Instructions:</strong>{" "}
+                        {selectedOrder.specialInstructions}
+                      </p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Order Items</h3>
+                  <h3 className="font-medium text-gray-900 mb-2">
+                    Order Items
+                  </h3>
                   <div className="space-y-2 bg-gray-50 p-3 rounded">
-                    {selectedOrder.items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between">
+                    {(selectedOrder.items || []).map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between pb-2 border-b last:border-0 last:pb-0"
+                      >
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-gray-600">x{item.quantity}</span>
+                          <span className="text-sm text-gray-600">
+                            x{item.quantity}
+                          </span>
                           <div>
-                            <p className="font-medium text-gray-900">{item.meal.name}</p>
-                            <p className="text-sm text-gray-500">${item.totalPrice}</p>
+                            <p className="font-medium text-gray-900">
+                              {item.meal.name}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              ${item.totalPrice}
+                            </p>
                           </div>
                         </div>
-                        <p className="text-sm font-medium text-gray-900">${item.totalPrice}</p>
+                        <div className="flex items-center gap-4">
+                          <p className="text-sm font-medium text-gray-900">
+                            ${item.totalPrice}
+                          </p>
+                                                  </div>
                       </div>
                     ))}
                   </div>

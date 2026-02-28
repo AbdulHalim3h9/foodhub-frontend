@@ -3,48 +3,62 @@ import { cookies } from "next/headers";
 
 const API_URL = env.API_URL;
 
-export interface OrderItem {
+export interface Order {
   id: string;
+  orderNumber: string;
+  status:
+    | "PENDING"
+    | "CONFIRMED"
+    | "PREPARING"
+    | "READY"
+    | "OUT_FOR_DELIVERY"
+    | "DELIVERED"
+    | "CANCELLED";
+  totalAmount: string;
+  deliveryAddress: string;
+  deliveryPhone: string;
+  specialInstructions?: string;
+  mealId: string;
   quantity: number;
+  pricePerItem: string;
   meal: {
     id: string;
     name: string;
     price: string;
     image: string;
+    description?: string;
+    category?: {
+      name: string;
+    };
   };
-  totalPrice: string;
-}
-
-export interface Order {
-  id: string;
-  orderNumber: string;
-  status: "PENDING" | "CONFIRMED" | "PREPARING" | "READY" | "COMPLETED" | "CANCELLED";
-  totalAmount: string;
-  deliveryAddress: string;
-  deliveryPhone: string;
-  specialInstructions?: string;
-  items: OrderItem[];
   createdAt: string;
   updatedAt: string;
-  user: {
+  items?: any[];
+  user?: {
     id: string;
     name: string;
     email: string;
+    phone: string;
+    address: string;
   };
-  customer?: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-  };
+  customer?: any;
   provider?: {
     id: string;
     businessName: string;
     phone: string;
-    user: {
+    address?: string;
+    user?: {
       email: string;
     };
   };
+}
+
+export interface CreateOrderData {
+  mealId: string;
+  quantity: number;
+  deliveryAddress: string;
+  deliveryPhone: string;
+  specialInstructions?: string;
 }
 
 export interface PaginatedOrders {
@@ -55,16 +69,6 @@ export interface PaginatedOrders {
     limit: number;
     totalPages: number;
   };
-}
-
-export interface CreateOrderData {
-  items: {
-    mealId: string;
-    quantity: number;
-  }[];
-  deliveryAddress: string;
-  deliveryPhone: string;
-  specialInstructions?: string;
 }
 
 export interface GetOrdersParams {
@@ -87,23 +91,29 @@ class OrderService {
     this.baseUrl = `${API_URL}/orders`;
   }
 
-  async getOrders(params?: GetOrdersParams, options?: ServiceOptions): Promise<{ data: PaginatedOrders | null; error: { message: string } | null }> {
+  async getOrders(
+    params?: GetOrdersParams,
+    options?: ServiceOptions,
+  ): Promise<{
+    data: PaginatedOrders | null;
+    error: { message: string } | null;
+  }> {
     try {
       const cookieStore = await cookies();
       const cookieHeader = cookieStore
         .getAll()
         .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+        .join("; ");
 
       const searchParams = new URLSearchParams();
-      
-      if (params?.search) searchParams.append('search', params.search);
-      if (params?.page) searchParams.append('page', params.page);
-      if (params?.limit) searchParams.append('limit', params.limit);
-      if (params?.sort) searchParams.append('sort', params.sort);
-      if (params?.status) searchParams.append('status', params.status);
 
-      const url = searchParams.toString() 
+      if (params?.search) searchParams.append("search", params.search);
+      if (params?.page) searchParams.append("page", params.page);
+      if (params?.limit) searchParams.append("limit", params.limit);
+      if (params?.sort) searchParams.append("sort", params.sort);
+      if (params?.status) searchParams.append("status", params.status);
+
+      const url = searchParams.toString()
         ? `${this.baseUrl}?${searchParams.toString()}`
         : this.baseUrl;
 
@@ -120,29 +130,95 @@ class OrderService {
       });
 
       if (!response.ok) {
-        return { 
-          data: null, 
-          error: { message: `Failed to fetch orders: ${response.statusText}` } 
+        return {
+          data: null,
+          error: { message: `Failed to fetch orders: ${response.statusText}` },
         };
       }
 
       const data = await response.json();
       return { data, error: null };
     } catch (error) {
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
 
-  async getOrderById(id: string, options?: ServiceOptions): Promise<{ data: Order | null; error: { message: string } | null }> {
+  async getProviderOrders(
+    params?: GetOrdersParams,
+    options?: ServiceOptions,
+  ): Promise<{
+    data: PaginatedOrders | null;
+    error: { message: string } | null;
+  }> {
     try {
       const cookieStore = await cookies();
       const cookieHeader = cookieStore
         .getAll()
         .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+        .join("; ");
+
+      const searchParams = new URLSearchParams();
+
+      if (params?.search) searchParams.append("search", params.search);
+      if (params?.page) searchParams.append("page", params.page);
+      if (params?.limit) searchParams.append("limit", params.limit);
+      if (params?.sort) searchParams.append("sort", params.sort);
+      if (params?.status) searchParams.append("status", params.status);
+
+      const url = searchParams.toString()
+        ? `${this.baseUrl}/provider/orders?${searchParams.toString()}`
+        : `${this.baseUrl}/provider/orders`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        },
+        next: {
+          revalidate: options?.revalidate ?? 60,
+          tags: options?.tags ?? ["provider-orders"],
+        },
+      });
+
+      if (!response.ok) {
+        return {
+          data: null,
+          error: {
+            message: `Failed to fetch provider orders: ${response.statusText}`,
+          },
+        };
+      }
+
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
+      };
+    }
+  }
+
+  async getOrderById(
+    id: string,
+    options?: ServiceOptions,
+  ): Promise<{ data: Order | null; error: { message: string } | null }> {
+    try {
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join("; ");
 
       const response = await fetch(`${this.baseUrl}/${id}`, {
         method: "GET",
@@ -157,29 +233,35 @@ class OrderService {
       });
 
       if (!response.ok) {
-        return { 
-          data: null, 
-          error: { message: `Failed to fetch order: ${response.statusText}` } 
+        return {
+          data: null,
+          error: { message: `Failed to fetch order: ${response.statusText}` },
         };
       }
 
       const data = await response.json();
       return { data, error: null };
     } catch (error) {
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
 
-  async createOrder(orderData: CreateOrderData, options?: ServiceOptions): Promise<{ data: Order | null; error: { message: string } | null }> {
+  async createOrder(
+    orderData: CreateOrderData,
+    options?: ServiceOptions,
+  ): Promise<{ data: Order | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
       const cookieHeader = cookieStore
         .getAll()
         .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+        .join("; ");
 
       const response = await fetch(`${this.baseUrl}`, {
         method: "POST",
@@ -195,32 +277,39 @@ class OrderService {
       });
 
       if (!response.ok) {
-        return { 
-          data: null, 
-          error: { message: `Failed to create order: ${response.statusText}` } 
+        return {
+          data: null,
+          error: { message: `Failed to create order: ${response.statusText}` },
         };
       }
 
       const data = await response.json();
       return { data, error: null };
     } catch (error) {
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
 
-  async updateOrderStatus(id: string, status: string, options?: ServiceOptions): Promise<{ data: Order | null; error: { message: string } | null }> {
+  async updateOrderStatus(
+    id: string,
+    status: string,
+    options?: ServiceOptions,
+  ): Promise<{ data: Order | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
       const cookieHeader = cookieStore
         .getAll()
         .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+        .join("; ");
 
       const response = await fetch(`${this.baseUrl}/${id}/status`, {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           ...(cookieHeader && { Cookie: cookieHeader }),
@@ -233,26 +322,84 @@ class OrderService {
       });
 
       if (!response.ok) {
-        return { 
-          data: null, 
-          error: { message: `Failed to update order status: ${response.statusText}` } 
+        return {
+          data: null,
+          error: {
+            message: `Failed to update order status: ${response.statusText}`,
+          },
         };
       }
 
       const data = await response.json();
       return { data, error: null };
     } catch (error) {
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
 
   // Admin methods
-  async getAllOrders(params?: GetOrdersParams, options?: ServiceOptions): Promise<{ data: PaginatedOrders | null; error: { message: string } | null }> {
-    // For admin, this might include all orders from all users
-    return this.getOrders(params, options);
+  async getAllOrders(
+    params?: GetOrdersParams,
+    options?: ServiceOptions,
+  ): Promise<{
+    data: PaginatedOrders | null;
+    error: { message: string } | null;
+  }> {
+    // For admin, use the /all endpoint to get all orders from all users
+    try {
+      const cookieStore = await cookies();
+      const cookieHeader = cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join("; ");
+
+      const searchParams = new URLSearchParams();
+
+      if (params?.search) searchParams.append("search", params.search);
+      if (params?.page) searchParams.append("page", params.page);
+      if (params?.limit) searchParams.append("limit", params.limit);
+      if (params?.sort) searchParams.append("sort", params.sort);
+      if (params?.status) searchParams.append("status", params.status);
+
+      const url = searchParams.toString()
+        ? `${this.baseUrl}/all?${searchParams.toString()}`
+        : `${this.baseUrl}/all`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookieHeader && { Cookie: cookieHeader }),
+        },
+        next: {
+          revalidate: options?.revalidate ?? 60,
+          tags: options?.tags ?? ["orders"],
+        },
+      });
+
+      if (!response.ok) {
+        return {
+          data: null,
+          error: { message: `Failed to fetch all orders: ${response.statusText}` },
+        };
+      }
+
+      const data = await response.json();
+      return { data, error: null };
+    } catch (error) {
+      return {
+        data: null,
+        error: {
+          message: error instanceof Error ? error.message : "Something Went Wrong",
+        },
+      };
+    }
   }
 }
 
