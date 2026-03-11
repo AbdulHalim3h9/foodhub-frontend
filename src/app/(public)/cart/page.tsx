@@ -1,11 +1,23 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  ArrowLeft,
+  ShoppingBag,
+} from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { getCart, updateItemQuantity, removeItemFromCart, clearCart } from "@/actions/cart.action";
+import {
+  getCart,
+  updateItemQuantity,
+  removeItemFromCart,
+  clearCart,
+} from "@/actions/cart.action";
 import { CartItem, Cart } from "@/services/cart.service";
 
 export default function CartPage() {
@@ -37,7 +49,7 @@ export default function CartPage() {
 
   const handleQuantityChange = async (mealId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-    
+
     try {
       setUpdating(mealId);
       const result = await updateItemQuantity(mealId, newQuantity);
@@ -73,7 +85,7 @@ export default function CartPage() {
 
   const handleClearCart = async () => {
     if (!cart?.items.length) return;
-    
+
     try {
       const result = await clearCart();
       if (result.success) {
@@ -90,7 +102,7 @@ export default function CartPage() {
     try {
       setOrdering(mealId);
       // Navigate to meal details page with order now trigger
-      window.location.href = `/browse/meal/${mealName.toLowerCase().replace(/\s+/g, '-')}?orderNow=true`;
+      window.location.href = `/browse/meal/${mealName.toLowerCase().replace(/\s+/g, "-")}?orderNow=true`;
     } catch (error) {
       console.error("Error navigating to order:", error);
     } finally {
@@ -118,7 +130,9 @@ export default function CartPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center py-16">
           <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Your cart is empty
+          </h1>
           <p className="text-gray-600 mb-8">
             Looks like you haven't added any delicious meals yet.
           </p>
@@ -139,7 +153,8 @@ export default function CartPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Shopping Cart</h1>
         <p className="text-gray-600">
-          {cart.itemCount} {cart.itemCount === 1 ? 'item' : 'items'} in your cart
+          {cart.itemCount} {cart.itemCount === 1 ? "item" : "items"} in your
+          cart
         </p>
       </div>
 
@@ -153,7 +168,10 @@ export default function CartPage() {
                   {/* Meal Image */}
                   <div className="relative w-20 h-20 flex-shrink-0">
                     <Image
-                      src={item.meal.image}
+                      src={
+                        item.meal.image ||
+                        "https://images.unsplash.com/photo-1546069901-ba9599a7e63c"
+                      }
                       alt={item.meal.name}
                       fill
                       className="object-cover rounded-lg"
@@ -162,13 +180,15 @@ export default function CartPage() {
 
                   {/* Meal Details */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 mb-1">{item.meal.name}</h3>
+                    <h3 className="font-semibold text-gray-900 mb-1">
+                      {item.meal.name}
+                    </h3>
                     {item.meal.description && (
                       <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                         {item.meal.description}
                       </p>
                     )}
-                    
+
                     {/* Quantity Controls */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -178,8 +198,15 @@ export default function CartPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 rounded-r-none"
-                            onClick={() => handleQuantityChange(item.meal.id, item.quantity - 1)}
-                            disabled={updating === item.meal.id || item.quantity <= 1}
+                            onClick={() =>
+                              handleQuantityChange(
+                                item.meal.id,
+                                item.quantity - 1,
+                              )
+                            }
+                            disabled={
+                              updating === item.meal.id || item.quantity <= 1
+                            }
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
@@ -190,18 +217,24 @@ export default function CartPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 rounded-l-none"
-                            onClick={() => handleQuantityChange(item.meal.id, item.quantity + 1)}
+                            onClick={() =>
+                              handleQuantityChange(
+                                item.meal.id,
+                                item.quantity + 1,
+                              )
+                            }
                             disabled={updating === item.meal.id}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
-                      
+
                       {/* Price and Actions */}
                       <div className="text-right">
                         <p className="font-bold text-lg text-gray-900">
-                          ${(Number(item.meal.price) * item.quantity).toFixed(2)}
+                          $
+                          {(Number(item.meal.price) * item.quantity).toFixed(2)}
                         </p>
                         <div className="flex gap-2 mt-2">
                           <Button
@@ -221,7 +254,9 @@ export default function CartPage() {
                             variant="default"
                             size="sm"
                             className="bg-orange-500 hover:bg-orange-600 text-white h-8 px-3"
-                            onClick={() => handleOrderNow(item.meal.id, item.meal.name)}
+                            onClick={() =>
+                              handleOrderNow(item.meal.id, item.meal.name)
+                            }
                             disabled={ordering === item.meal.id}
                           >
                             {ordering === item.meal.id ? (
@@ -229,7 +264,9 @@ export default function CartPage() {
                             ) : (
                               <ShoppingBag className="h-4 w-4 mr-2" />
                             )}
-                            {ordering === item.meal.id ? 'Ordering...' : 'Order Now'}
+                            {ordering === item.meal.id
+                              ? "Ordering..."
+                              : "Order Now"}
                           </Button>
                         </div>
                       </div>
@@ -243,7 +280,7 @@ export default function CartPage() {
 
         {/* Clear Cart Button */}
         <div className="lg:col-span-3">
-          <Button 
+          <Button
             className="w-full bg-orange-500 hover:bg-orange-600 text-white"
             onClick={handleClearCart}
             disabled={!cart.items.length}

@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  ShoppingCart,
-  Package,
-  Eye,
-  Loader2,
-} from "lucide-react";
+import { ShoppingCart, Package, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProviderOrders } from "@/actions/order.action";
@@ -23,29 +18,29 @@ export default function ProviderDashboard() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch orders
         const ordersResult = await getProviderOrders({ limit: "5" });
-        
+
         // Fetch meals count efficiently - just get 1 item to get pagination metadata with total count
         const mealsResult = await getProviderMeals({ limit: "1" });
-        
+
         if (ordersResult.success && ordersResult.data) {
           setOrders(ordersResult.data.data);
         } else {
           setError(ordersResult.error || "Failed to fetch orders");
         }
-        
+
         if (mealsResult.success && mealsResult.data) {
           // Get total count from pagination metadata instead of fetching all meals
-          if ('pagination' in mealsResult.data) {
-            setActiveItemsCount(mealsResult.data.pagination.total);
-          } else if (Array.isArray(mealsResult.data)) {
+          const data = mealsResult.data as any;
+          if (data.pagination) {
+            setActiveItemsCount(data.pagination.total);
+          } else if (Array.isArray(data)) {
             // Fallback: if no pagination, count the array (shouldn't happen with provider meals)
-            setActiveItemsCount(mealsResult.data.length);
+            setActiveItemsCount(data.length);
           }
         }
-        
       } catch (err) {
         setError("Failed to fetch dashboard data");
       } finally {
@@ -76,23 +71,26 @@ export default function ProviderDashboard() {
   };
 
   const formatStatus = (status: string) => {
-    return status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    return status
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -119,9 +117,7 @@ export default function ProviderDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{orders.length}</div>
-            <p className="text-xs text-blue-100">
-              Recent orders
-            </p>
+            <p className="text-xs text-blue-100">Recent orders</p>
           </CardContent>
         </Card>
 
@@ -140,14 +136,14 @@ export default function ProviderDashboard() {
 
         <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Today's Revenue
+            </CardTitle>
             <Package className="h-4 w-4 text-orange-100" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$425</div>
-            <p className="text-xs text-orange-100">
-              From 23 orders today
-            </p>
+            <p className="text-xs text-orange-100">From 23 orders today</p>
           </CardContent>
         </Card>
       </div>
@@ -174,9 +170,7 @@ export default function ProviderDashboard() {
               <span className="ml-2">Loading orders...</span>
             </div>
           ) : error ? (
-            <div className="text-center py-8 text-red-600">
-              {error}
-            </div>
+            <div className="text-center py-8 text-red-600">{error}</div>
           ) : orders.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No recent orders found
@@ -201,7 +195,8 @@ export default function ProviderDashboard() {
                           {order.meal?.name ?? "Meal"} (x{order.quantity})
                         </p>
                         <p className="text-xs text-gray-400">
-                          {formatDate(order.createdAt)} at {formatTime(order.createdAt)}
+                          {formatDate(order.createdAt)} at{" "}
+                          {formatTime(order.createdAt)}
                         </p>
                       </div>
                     </div>

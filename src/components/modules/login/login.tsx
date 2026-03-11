@@ -18,17 +18,28 @@ import { useRouter } from "next/navigation";
 
 interface LoginProps {
   heading?: string;
+  subheading?: string;
+  logo?: {
+    url: string;
+    text: string;
+  };
   buttonText?: string;
+  googleText?: string;
   signupText?: string;
   signupUrl?: string;
+  forgotPasswordUrl?: string;
   className?: string;
 }
 
 export function Login({
   heading,
+  subheading,
+  logo,
   buttonText,
+  googleText,
   signupText,
   signupUrl,
+  forgotPasswordUrl,
   className,
 }: LoginProps) {
   const router = useRouter();
@@ -84,7 +95,7 @@ export function Login({
         <div className="text-start mb-8">
           <h1 className="text-3xl font-bold">{heading}</h1>
           <p className="text-muted-foreground mt-2">
-            Enter your credentials to access your account
+            {subheading || "Enter your credentials to access your account"}
           </p>
         </div>
 

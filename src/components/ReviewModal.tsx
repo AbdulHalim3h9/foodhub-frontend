@@ -11,10 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea"; // ← prefer shadcn Textarea if available
 import { Star } from "lucide-react";
 import { toast } from "sonner";
-import {
-  createMealReview,
-  deleteMealReview,
-} from "@/actions/review.action";
+import { createMealReview, deleteMealReview } from "@/actions/review.action";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -44,7 +41,10 @@ export default function ReviewModal({
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isViewOnlyMode = !!existingReview && rating === existingReview.rating && comment === (existingReview.comment ?? "");
+  const isViewOnlyMode =
+    !!existingReview &&
+    rating === existingReview.rating &&
+    comment === (existingReview.comment ?? "");
 
   const effectiveRating = hoveredRating || rating;
 
@@ -58,11 +58,9 @@ export default function ReviewModal({
     setIsSubmitting(true);
     setError(null);
 
-    const payload = { rating, comment: comment.trim() || null };
+    const payload = { rating, comment: comment.trim() || undefined };
 
-    const result = existingReview
-      ? await createMealReview(mealId, payload)
-      : await createMealReview(mealId, payload);
+    const result = await createMealReview(mealId, payload);
 
     if (result.success) {
       toast.success("Review submitted!");
@@ -137,7 +135,10 @@ export default function ReviewModal({
           <StarRating />
 
           <div className="space-y-2">
-            <label htmlFor="comment" className="text-sm font-medium text-gray-700">
+            <label
+              htmlFor="comment"
+              className="text-sm font-medium text-gray-700"
+            >
               Your thoughts (optional)
             </label>
             <Textarea
@@ -175,8 +176,8 @@ export default function ReviewModal({
                 {isSubmitting
                   ? "Saving..."
                   : existingReview
-                  ? "Update Review"
-                  : "Submit Review"}
+                    ? "Update Review"
+                    : "Submit Review"}
               </Button>
             )}
 

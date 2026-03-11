@@ -33,7 +33,11 @@ export default async function Home() {
 
   const categories = categoriesResult?.data || [];
   const cuisines = cuisinesResult?.data || [];
-  const featured = featuredMeals?.data?.data || [];
+  const featured = featuredMeals?.data
+    ? Array.isArray(featuredMeals.data)
+      ? featuredMeals.data
+      : featuredMeals.data.data
+    : [];
 
   return (
     <div className="flex flex-col">

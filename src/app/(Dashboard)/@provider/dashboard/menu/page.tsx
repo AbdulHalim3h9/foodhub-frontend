@@ -2,24 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  Star, 
-  Clock, 
-  DollarSign, 
+import {
+  Plus,
+  Search,
+  Filter,
+  Edit,
+  Trash2,
+  Eye,
+  Star,
+  Clock,
+  DollarSign,
   BarChart3,
   Package,
   AlertTriangle,
   ToggleLeft,
   ToggleRight,
   ChefHat,
-  X
+  X,
 } from "lucide-react";
+import { Meal } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -38,35 +39,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getProviderMeals, createMeal, updateMeal, deleteMeal, toggleFeatured } from "@/actions/meal.action";
+import {
+  getProviderMeals,
+  createMeal,
+  updateMeal,
+  deleteMeal,
+  toggleFeatured,
+} from "@/actions/meal.action";
 import { GetMealsParams, MealData } from "@/services/meal.service";
 import { getCategories } from "@/actions/category.action";
 import { Category } from "@/services/category.service";
 import MealForm from "@/components/meal/MealForm";
 import { toast } from "sonner";
-
-// Define Meal interface based on backend response
-interface Meal {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  image?: string;
-  ingredients?: string;
-  allergens?: string;
-  prepTime?: number;
-  cuisine?: string;
-  isFeatured?: boolean;
-  isAvailable?: boolean;
-  categoryId?: string | null;
-  category?: {
-    id: string;
-    name: string;
-  } | null;
-  providerId: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface PaginatedMeals {
   data: Meal[];
@@ -86,10 +70,10 @@ export default function ProviderMenu() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<React.ReactNode | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  
+
   // Edit modal state
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -111,7 +95,7 @@ export default function ProviderMenu() {
       console.log("🔍 Fetching categories...");
       const result = await getCategories();
       console.log("📊 Categories result:", result);
-      
+
       if (result.success && result.data) {
         console.log("✅ Categories loaded:", result.data);
         setCategories(result.data);
@@ -130,7 +114,7 @@ export default function ProviderMenu() {
   const fetchMeals = async () => {
     setLoading(true);
     setError(null);
-    
+
     const params: GetMealsParams = {
       search: searchTerm || undefined,
       cuisine: selectedCategory !== "All" ? selectedCategory : undefined,
@@ -145,13 +129,13 @@ export default function ProviderMenu() {
         setError(
           <div className="flex flex-col gap-2">
             <span>{result.error}</span>
-            <a 
-              href="/dashboard/profile" 
+            <a
+              href="/dashboard/profile"
               className="text-blue-600 hover:text-blue-800 underline font-medium"
             >
               Complete your provider profile →
             </a>
-          </div>
+          </div>,
         );
       } else {
         setError(result.error || "Failed to fetch provider meals");
@@ -174,15 +158,15 @@ export default function ProviderMenu() {
   };
 
   const toggleItemSelection = (itemId: string) => {
-    setSelectedItems(prev => 
-      prev.includes(itemId) 
-        ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
+    setSelectedItems((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId],
     );
   };
 
   const selectAll = () => {
-    setSelectedItems(meals.map(item => item.id));
+    setSelectedItems(meals.map((item) => item.id));
   };
 
   const clearSelection = () => {
@@ -200,7 +184,7 @@ export default function ProviderMenu() {
 
   const handleDeleteMeal = async (id: string) => {
     if (!confirm("Are you sure you want to delete this meal?")) return;
-    
+
     try {
       const result = await deleteMeal(id);
       if (result.success) {
@@ -223,7 +207,7 @@ export default function ProviderMenu() {
     try {
       setIsSubmitting(true);
       const result = await createMeal(mealData);
-      
+
       if (result.success) {
         toast.success("Meal created successfully");
         setShowEditModal(false);
@@ -245,11 +229,11 @@ export default function ProviderMenu() {
 
   const handleUpdateMeal = async (mealData: MealData) => {
     if (!editingMeal) return;
-    
+
     try {
       setIsSubmitting(true);
       const result = await updateMeal(editingMeal.id, mealData);
-      
+
       if (result.success) {
         toast.success("Meal updated successfully");
         setShowEditModal(false);
@@ -277,12 +261,14 @@ export default function ProviderMenu() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Menu Management</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Menu Management
+              </h1>
               <p className="text-sm text-gray-600 mt-1">
                 Manage your restaurant menu items
               </p>
             </div>
-            
+
             <div className="flex items-center gap-3">
               {/* Search */}
               <div className="relative">
@@ -294,19 +280,28 @@ export default function ProviderMenu() {
                   className="pl-10 w-64 h-10 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
                 />
               </div>
-              
+
               {/* Category Filter */}
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select
+                value={selectedCategory}
+                onValueChange={setSelectedCategory}
+              >
                 <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem key="All" value="All">All</SelectItem>
+                  <SelectItem key="All" value="All">
+                    All
+                  </SelectItem>
                   {categoriesLoading ? (
-                    <SelectItem disabled>Loading...</SelectItem>
+                    <SelectItem disabled value="loading">
+                      Loading...
+                    </SelectItem>
                   ) : (
-                    categories.map(category => (
-                      <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
+                    categories.map((category) => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
                     ))
                   )}
                 </SelectContent>
@@ -331,7 +326,7 @@ export default function ProviderMenu() {
                   <ToggleRight className="size-4" />
                 </Button>
               </div>
-              
+
               {/* Actions */}
               <div className="flex items-center gap-2">
                 <Button
@@ -341,17 +336,28 @@ export default function ProviderMenu() {
                   <Plus className="size-4 mr-2" />
                   Add New Item
                 </Button>
-                
+
                 {selectedItems.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                    <Badge
+                      variant="secondary"
+                      className="bg-orange-100 text-orange-800"
+                    >
                       {selectedItems.length} selected
                     </Badge>
-                    <Button variant="outline" size="sm" className="border-gray-200">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-200"
+                    >
                       <Edit className="size-4 mr-2" />
                       Edit Selected
                     </Button>
-                    <Button variant="outline" size="sm" className="border-red-200 text-red-600">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-red-200 text-red-600"
+                    >
                       <Trash2 className="size-4 mr-2" />
                       Delete Selected
                     </Button>
@@ -373,7 +379,9 @@ export default function ProviderMenu() {
                 <Package className="size-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{meals.length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {meals.length}
+                </p>
                 <p className="text-sm text-gray-600">Total Items</p>
               </div>
             </div>
@@ -385,7 +393,9 @@ export default function ProviderMenu() {
                 <Eye className="size-6 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{meals.filter(item => item.isAvailable !== false).length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {meals.filter((item) => item.isAvailable !== false).length}
+                </p>
                 <p className="text-sm text-gray-600">Active Items</p>
               </div>
             </div>
@@ -397,7 +407,9 @@ export default function ProviderMenu() {
                 <ChefHat className="size-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{meals.filter(item => item.isFeatured).length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {meals.filter((item) => item.isFeatured).length}
+                </p>
                 <p className="text-sm text-gray-600">Featured Items</p>
               </div>
             </div>
@@ -424,14 +436,16 @@ export default function ProviderMenu() {
                 <input
                   type="checkbox"
                   checked={selectedItems.length === meals.length}
-                  onChange={(e) => e.target.checked ? selectAll() : clearSelection()}
+                  onChange={(e) =>
+                    e.target.checked ? selectAll() : clearSelection()
+                  }
                   className="size-4 text-orange-600 focus:ring-orange-500"
                 />
                 <label className="text-sm text-gray-600 ml-2">
                   Select all ({selectedItems.length} of {meals.length})
                 </label>
               </div>
-              
+
               <div className="text-sm text-gray-600">
                 Showing {meals.length} items
               </div>
@@ -449,7 +463,10 @@ export default function ProviderMenu() {
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {meals.map((item) => (
-                  <div key={item.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+                  <div
+                    key={item.id}
+                    className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                  >
                     <div className="relative">
                       {/* Checkbox */}
                       <div className="absolute top-3 left-3 z-10">
@@ -460,7 +477,7 @@ export default function ProviderMenu() {
                           className="size-4 text-orange-600 focus:ring-orange-500"
                         />
                       </div>
-                      
+
                       {/* Item Image */}
                       <div className="relative h-48 bg-gray-100">
                         {item.image ? (
@@ -484,92 +501,128 @@ export default function ProviderMenu() {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Item Details */}
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.name}</h3>
-                          <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                            {item.name}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {item.description}
+                          </p>
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
                               <Clock className="size-3" />
                               {item.prepTime ? `${item.prepTime} min` : "N/A"}
                             </span>
                             <span className="flex items-center gap-1">
-                              <DollarSign className="size-3" />
-                              ${Number(item.price).toFixed(2)}
+                              <DollarSign className="size-3" />$
+                              {Number(item.price).toFixed(2)}
                             </span>
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Category */}
                       <div className="mb-3">
                         <Badge className="bg-blue-100 text-blue-800">
-                          {item.category?.name || 'No Category'}
+                          {item.category?.name || "No Category"}
                         </Badge>
                       </div>
-                      
+
                       {/* Ingredients */}
                       <div className="mb-3">
-                        <p className="text-xs font-medium text-gray-700 mb-1">Ingredients:</p>
+                        <p className="text-xs font-medium text-gray-700 mb-1">
+                          Ingredients:
+                        </p>
                         <div className="flex flex-wrap gap-1">
-                          {item.ingredients ? item.ingredients.split(',').slice(0, 3).map((ingredient, index) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                              {ingredient.trim()}
+                          {item.ingredients ? (
+                            item.ingredients
+                              .split(",")
+                              .slice(0, 3)
+                              .map((ingredient, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded"
+                                >
+                                  {ingredient.trim()}
+                                </span>
+                              ))
+                          ) : (
+                            <span className="text-xs text-gray-500">
+                              No ingredients listed
                             </span>
-                          )) : (
-                            <span className="text-xs text-gray-500">No ingredients listed</span>
                           )}
-                          {item.ingredients && item.ingredients.split(',').length > 3 && (
-                            <span className="text-xs text-gray-500">+{item.ingredients.split(',').length - 3} more</span>
-                          )}
+                          {item.ingredients &&
+                            item.ingredients.split(",").length > 3 && (
+                              <span className="text-xs text-gray-500">
+                                +{item.ingredients.split(",").length - 3} more
+                              </span>
+                            )}
                         </div>
                       </div>
-                      
+
                       {/* Allergens */}
                       <div className="mb-3">
-                        <p className="text-xs font-medium text-gray-700 mb-1">Allergens:</p>
+                        <p className="text-xs font-medium text-gray-700 mb-1">
+                          Allergens:
+                        </p>
                         <div className="flex flex-wrap gap-1">
-                          {item.allergens ? item.allergens.split(',').map((allergen, index) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
-                              {allergen.trim()}
+                          {item.allergens ? (
+                            item.allergens.split(",").map((allergen, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 text-xs rounded"
+                              >
+                                {allergen.trim()}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-gray-500">
+                              No allergens listed
                             </span>
-                          )) : (
-                            <span className="text-xs text-gray-500">No allergens listed</span>
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Stats & Actions */}
                       <div className="flex items-center justify-between">
                         <div className="text-right">
                           <div className="flex items-center gap-1 mb-2">
                             <Star className="size-3 text-yellow-400 fill-current" />
-                            <span className="text-sm text-gray-600">{item.category?.name || 'No Category'}</span>
+                            <span className="text-sm text-gray-600">
+                              {item.category?.name || "No Category"}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <BarChart3 className="size-3 text-gray-400" />
-                            <span className="text-sm text-gray-600">{item.cuisine || 'No Cuisine'}</span>
+                            <span className="text-sm text-gray-600">
+                              {item.cuisine || "No Cuisine"}
+                            </span>
                           </div>
                         </div>
-                        
+
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="border-gray-200">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-gray-200"
+                          >
                             <Eye className="size-4" />
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="border-gray-200"
                             onClick={() => handleEditMeal(item)}
                           >
                             <Edit className="size-4" />
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="border-red-200 text-red-600"
                             onClick={() => handleDeleteMeal(item.id)}
                           >
@@ -584,7 +637,10 @@ export default function ProviderMenu() {
             ) : (
               <div className="space-y-4">
                 {meals.map((item) => (
-                  <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                  <div
+                    key={item.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <input
@@ -593,7 +649,7 @@ export default function ProviderMenu() {
                           onChange={() => toggleItemSelection(item.id)}
                           className="size-4 text-orange-600 focus:ring-orange-500"
                         />
-                        
+
                         {item.image ? (
                           <img
                             src={item.image}
@@ -602,13 +658,17 @@ export default function ProviderMenu() {
                           />
                         ) : (
                           <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
-                            <span className="text-gray-500 text-xs">No Image</span>
+                            <span className="text-gray-500 text-xs">
+                              No Image
+                            </span>
                           </div>
                         )}
-                        
+
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {item.name}
+                            </h3>
                             {item.isFeatured && (
                               <Badge className="bg-yellow-100 text-yellow-800">
                                 <Star className="size-3 mr-1" />
@@ -616,43 +676,49 @@ export default function ProviderMenu() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {item.description}
+                          </p>
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <span className="flex items-center gap-1">
                               <Clock className="size-3" />
                               {item.prepTime ? `${item.prepTime} min` : "N/A"}
                             </span>
                             <span className="flex items-center gap-1">
-                              <DollarSign className="size-3" />
-                              ${Number(item.price).toFixed(2)}
+                              <DollarSign className="size-3" />$
+                              {Number(item.price).toFixed(2)}
                             </span>
                             <span className="flex items-center gap-1">
                               <Star className="size-3 text-yellow-400 fill-current" />
-                              {item.category?.name || 'No Category'}
+                              {item.category?.name || "No Category"}
                             </span>
                             <span className="flex items-center gap-1">
                               <BarChart3 className="size-3 text-gray-400" />
-                              {item.cuisine || 'No Cuisine'}
+                              {item.cuisine || "No Cuisine"}
                             </span>
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="border-gray-200">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-gray-200"
+                        >
                           <Eye className="size-4" />
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="border-gray-200"
                           onClick={() => handleEditMeal(item)}
                         >
                           <Edit className="size-4" />
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="border-red-200 text-red-600"
                           onClick={() => handleDeleteMeal(item.id)}
                         >
@@ -660,9 +726,9 @@ export default function ProviderMenu() {
                         </Button>
                       </div>
                     </div>
-                    </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -677,19 +743,17 @@ export default function ProviderMenu() {
                 <h2 className="text-xl font-bold">
                   {editingMeal ? "Edit Meal" : "Create New Meal"}
                 </h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleCancelEdit}
-                >
+                <Button variant="ghost" size="icon" onClick={handleCancelEdit}>
                   <X className="size-4" />
                 </Button>
               </div>
-              
+
               <MealForm
                 meal={editingMeal}
                 categories={categories}
-                onSubmit={editingMeal ? handleUpdateMeal : handleCreateMealSubmit}
+                onSubmit={
+                  editingMeal ? handleUpdateMeal : handleCreateMealSubmit
+                }
                 onCancel={handleCancelEdit}
                 loading={isSubmitting}
               />
