@@ -1,6 +1,10 @@
 "use server";
 
-import { AuthService } from "@/services/auth/auth.service";
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+} from "@/services/auth/auth.service";
 
 export type AuthState = {
   errors?: Record<string, string[]>;
@@ -12,20 +16,21 @@ export async function signupAction(
   prevState: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  return AuthService.validateAndRegister(formData);
+  const data = Object.fromEntries(formData.entries());
+  // Basic mapping of FormData to RegisterInput
+  const result = await registerUser(data as any);
+  return result;
 }
 
 export async function loginAction(
   prevState: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
-  return AuthService.validateAndLogin(formData);
+  const data = Object.fromEntries(formData.entries());
+  const result = await loginUser(data as any);
+  return result;
 }
 
 export async function logoutAction() {
-  return AuthService.logout();
-}
-
-export async function getAuthCookieAction() {
-  return AuthService.getAuthCookie();
+  return logoutUser();
 }
