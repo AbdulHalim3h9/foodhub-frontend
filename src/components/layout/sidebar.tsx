@@ -19,6 +19,7 @@ import {
   LogOut,
   User,
 } from "lucide-react";
+import { logoutUser } from "@/services/auth/auth.service";
 
 import {
   Sidebar,
@@ -163,7 +164,13 @@ export function AppSidebar({ userRole, ...props }: AppSidebarProps) {
         <SidebarGroup>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton className="text-red-500 hover:text-red-600 hover:bg-red-50">
+              <SidebarMenuButton
+                onClick={async () => {
+                  await logoutUser();
+                  window.location.href = "/login";
+                }}
+                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+              >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
               </SidebarMenuButton>

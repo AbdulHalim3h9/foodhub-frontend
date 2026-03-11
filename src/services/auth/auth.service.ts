@@ -1,139 +1,76 @@
+"use server";
+
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import {
-  registerSchema,
-  loginSchema,
-  RegisterInput,
-  LoginInput,
-} from "@/lib/validators/auth";
-import { z } from "zod";
+import { jwtDecode } from "jwt-decode";
+import { RegisterInput, LoginInput } from "@/lib/validators/auth";
 
-export class AuthService {
-  private static readonly API_URL = process.env.AUTH_URL;
+const API_URL = process.env.API_URL || "http://localhost:5000/api";
 
-  static async register(
-    data: RegisterInput,
-  ): Promise<{ token: string; user: any }> {
-    const response = await fetch(`${this.API_URL}/sign-up/email`, {
+export const registerUser = async (userData: RegisterInput) => {
+  try {
+    const res = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Origin: `${process.env.FRONTEND_URL}`,
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(userData),
     });
+    const result = await res.json();
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || "Registration failed");
+    if (result.success) {
+      const storeCookie = await cookies();
+      storeCookie.set("token", result.data.accessToken || result.data.token);
     }
 
-    return response.json();
+    return result;
+  } catch (error) {
+    console.error("Registration error:", error);
+    return { success: false, message: "Registration failed" };
   }
+};
 
-  static async login(data: LoginInput): Promise<{ token: string; user: any }> {
-    const response = await fetch(`${this.API_URL}/sign-in/email`, {
+export const loginUser = async (userData: LoginInput) => {
+  try {
+    const res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Origin: `${process.env.FRONTEND_URL}`,
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(userData),
     });
+    const result = await res.json();
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || "Invalid credentials");
+    if (result.success) {
+      const storeCookie = await cookies();
+      // The backend returns accessToken in data.accessToken
+      const token = result.data.accessToken || result.data.token;
+      storeCookie.set("token", token);
     }
 
-    return response.json();
+    return result;
+  } catch (error) {
+    console.error("Login error:", error);
+    return { success: false, message: "Login failed" };
   }
+};
 
-  static async logout() {
-    (await cookies()).delete("token");
-  }
+export const getUser = async () => {
+  try {
+    const storeCookie = await cookies();
+    const token = storeCookie.get("token")?.value;
 
-  static async getAuthCookie() {
-    return (await cookies()).get("token");
-  }
-
-  static async setAuthCookie(token: string, user: any): Promise<void> {
-    (await cookies()).set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
-  }
-
-  static async validateAndRegister(formData: FormData): Promise<{
-    errors?: Record<string, string[]>;
-    message?: string;
-    success?: boolean;
-  }> {
-    try {
-      // 1. Parse + validate
-      const parsed = registerSchema.safeParse(Object.fromEntries(formData));
-      if (!parsed.success) {
-        return {
-          errors: z.flattenError(parsed.error).fieldErrors,
-          message: "Please fix the errors below.",
-          success: false,
-        };
-      }
-
-      // 2. Call API
-      const { token } = await this.register(parsed.data);
-
-      // 3. Store token
-      await this.setAuthCookie(token, parsed.data);
-    } catch (error) {
-      console.error("Registration error:", error);
-      return {
-        message:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred. Please try again.",
-        success: false,
-      };
+    if (token) {
+      const decodedData = jwtDecode(token);
+      return decodedData;
     }
-
-    // 4. Redirect
-    redirect("/dashboard");
+    return null;
+  } catch (error) {
+    console.error("Error getting user:", error);
+    return null;
   }
+};
 
-  static async validateAndLogin(formData: FormData): Promise<{
-    errors?: Record<string, string[]>;
-    message?: string;
-    success?: boolean;
-  }> {
-    try {
-      // 1. Parse + validate
-      const parsed = loginSchema.safeParse(Object.fromEntries(formData));
-      if (!parsed.success) {
-        return {
-          errors: z.flattenError(parsed.error).fieldErrors,
-          message: "Please fix the errors below.",
-          success: false,
-        };
-      }
-
-      // 2. Call API
-      const { token } = await this.login(parsed.data);
-
-      // 3. Store token
-      await this.setAuthCookie(token, parsed.data);
-    } catch (error) {
-      console.error("Login error:", error);
-      return {
-        message:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred. Please try again.",
-        success: false,
-      };
-    }
-
-    redirect("/dashboard");
-  }
-}
+export const logoutUser = async () => {
+  const storeCookie = await cookies();
+  storeCookie.delete("token");
+};

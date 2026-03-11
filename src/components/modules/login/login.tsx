@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/field";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
-import { authClient } from "@/lib/auth-client";
+import { loginUser } from "@/services/auth/auth.service";
+import { jwtDecode } from "jwt-decode";
 import { loginSchema } from "@/lib/validators/auth";
 import { useRouter } from "next/navigation";
 
@@ -43,20 +44,23 @@ export function Login({
       const toastId = toast.loading("Signing in...");
 
       try {
-        const { data, error } = await authClient.signIn.email({
+        const result = await loginUser({
           email: value.email,
           password: value.password,
         });
 
-        if (error) {
-          toast.error(error.message || "Invalid credentials", { id: toastId });
+        if (!result.success) {
+          toast.error(result.message || "Invalid credentials", { id: toastId });
           return;
         }
 
         toast.success("Login successful!", { id: toastId });
-        
-        // Redirect based on user role
-        if ((data.user as any).role === "CUSTOMER") {
+
+        // Use getUser to get role for redirection (or if backend returns it in login)
+        // For now, let's assume result.data might contain user info or we can decode it
+        const user: any = jwtDecode(result.data.accessToken);
+
+        if (user.role === "CUSTOMER") {
           router.push("/browse");
         } else {
           router.push("/dashboard");

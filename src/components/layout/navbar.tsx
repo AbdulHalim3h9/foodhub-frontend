@@ -19,7 +19,7 @@ import {
 import { getCategories } from "@/actions/category.action";
 import { Category } from "@/services/category.service";
 import { useState, useEffect } from "react";
-import { authClient } from "@/lib/auth-client";
+import { getUser, logoutUser } from "@/services/auth/auth.service";
 import { useRouter } from "next/navigation";
 import { getCartCount } from "@/actions/cart.action";
 
@@ -134,51 +134,34 @@ const Navbar1 = ({
   const [cartCount, setCartCount] = useState(0);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  const { data: session, isPending } = authClient.useSession();
+  const [session, setSession] = useState<any>(null);
+  const [isPending, setIsPending] = useState(true);
   const router = useRouter();
 
+  useEffect(() => {
+    const fetchSession = async () => {
+      setIsPending(true);
+      try {
+        const user = await getUser();
+        if (user) {
+          setSession({ user });
+        } else {
+          setSession(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch session:", error);
+      } finally {
+        setIsPending(false);
+      }
+    };
+    fetchSession();
+  }, []);
+
   const handleLogout = async () => {
-    await authClient.signOut();
+    await logoutUser();
+    setSession(null);
     router.refresh();
   };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      // Show navbar when scrolling up or at top
-      if (currentScrollY < lastScrollY || currentScrollY < 10) {
-        setIsVisible(true);
-      }
-      // Hide navbar when scrolling down
-      else if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsVisible(false);
-      }
-
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
-
-  // Fetch cart count for customers
-  useEffect(() => {
-    if (session?.user && (session.user as any).role === "CUSTOMER") {
-      const fetchCartCount = async () => {
-        const result = await getCartCount();
-        if (result.success) {
-          setCartCount(result.count);
-        }
-      };
-      
-      fetchCartCount();
-      
-      // Set up periodic refresh (every 30 seconds)
-      const interval = setInterval(fetchCartCount, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [session]);
 
   // Fetch categories from backend
   useEffect(() => {
@@ -186,29 +169,30 @@ const Navbar1 = ({
       try {
         const result = await getCategories();
         if (result.success && result.data) {
-          setCategories(result.data.data || result.data || []);
+          setCategories(result.data);
         }
       } catch (error) {
         console.error("Failed to fetch categories:", error);
       }
     };
-    
+
     fetchCategories();
   }, []);
 
   // Create dynamic menu with categories and role-based items
   const dynamicMenu = (() => {
-    let baseMenu = menu.map(item => {
+    let baseMenu = menu.map((item) => {
       if (item.title === "Categories") {
         // Replace hardcoded categories with backend categories
         return {
           ...item,
-          items: categories.map(category => ({
+          items: categories.map((category) => ({
             title: category.name,
-            description: category.description || `Explore ${category.name} dishes`,
+            description:
+              category.description || `Explore ${category.name} dishes`,
             icon: <Utensils className="size-5 shrink-0 text-orange-500" />,
-            url: `/browse/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`,
-          }))
+            url: `/browse/category/${category.name.toLowerCase().replace(/\s+/g, "-")}`,
+          })),
         };
       }
       return item;
@@ -217,7 +201,9 @@ const Navbar1 = ({
     // Add Dashboard item for admin and provider roles
     if (session?.user && (session.user as any).role !== "CUSTOMER") {
       // Insert Dashboard after "Home" and before "Browse Meals"
-      const dashboardIndex = baseMenu.findIndex(item => item.title === "Browse Meals");
+      const dashboardIndex = baseMenu.findIndex(
+        (item) => item.title === "Browse Meals",
+      );
       if (dashboardIndex > 0) {
         baseMenu.splice(dashboardIndex, 0, {
           title: "Dashboard",
@@ -299,13 +285,16 @@ const Navbar1 = ({
                   </a>
                 </Button>
               )}
-              
+
               {isPending ? (
                 <div className="h-9 w-24 bg-gray-100 animate-pulse rounded-md" />
               ) : session?.user ? (
                 <div className="flex items-center gap-3">
                   {/* User Dropdown */}
-                  <DropdownMenu open={isUserDropdownOpen} onOpenChange={setIsUserDropdownOpen}>
+                  <DropdownMenu
+                    open={isUserDropdownOpen}
+                    onOpenChange={setIsUserDropdownOpen}
+                  >
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
@@ -314,8 +303,8 @@ const Navbar1 = ({
                       >
                         <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
                           {session.user.image ? (
-                            <img 
-                              src={session.user.image} 
+                            <img
+                              src={session.user.image}
                               alt={session.user.name}
                               className="h-8 w-8 rounded-full object-cover"
                             />
@@ -335,8 +324,8 @@ const Navbar1 = ({
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
                             {session.user.image ? (
-                              <img 
-                                src={session.user.image} 
+                              <img
+                                src={session.user.image}
                                 alt={session.user.name}
                                 className="h-10 w-10 rounded-full object-cover"
                               />
@@ -345,12 +334,16 @@ const Navbar1 = ({
                             )}
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-                            <p className="text-xs text-gray-500">{session.user.email}</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {session.user.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {session.user.email}
+                            </p>
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Menu Items */}
                       <DropdownMenuItem asChild>
                         <a href="/profile" className="flex items-center gap-2">
@@ -358,27 +351,31 @@ const Navbar1 = ({
                           <span>Profile</span>
                         </a>
                       </DropdownMenuItem>
-                      
+
                       {/* Dashboard - Only for Admin and Provider */}
-                      {session?.user && (session.user as any).role !== "CUSTOMER" && (
-                        <DropdownMenuItem asChild>
-                          <a href="/dashboard" className="flex items-center gap-2">
-                            <Layout className="h-4 w-4" />
-                            <span>Dashboard</span>
-                          </a>
-                        </DropdownMenuItem>
-                      )}
-                      
+                      {session?.user &&
+                        (session.user as any).role !== "CUSTOMER" && (
+                          <DropdownMenuItem asChild>
+                            <a
+                              href="/dashboard"
+                              className="flex items-center gap-2"
+                            >
+                              <Layout className="h-4 w-4" />
+                              <span>Dashboard</span>
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+
                       <DropdownMenuItem asChild>
                         <a href="/orders" className="flex items-center gap-2">
                           <Package className="h-4 w-4" />
                           <span>My Orders</span>
                         </a>
                       </DropdownMenuItem>
-                      
+
                       <DropdownMenuSeparator />
-                      
-                      <DropdownMenuItem 
+
+                      <DropdownMenuItem
                         onClick={handleLogout}
                         className="flex items-center gap-2 text-red-600 focus:text-red-600"
                       >
@@ -441,7 +438,7 @@ const Navbar1 = ({
                   </a>
                 </Button>
               )}
-              
+
               {/* Mobile Search Toggle */}
               <Sheet>
                 <SheetTrigger asChild>
@@ -508,8 +505,8 @@ const Navbar1 = ({
                             <div className="flex items-center gap-3">
                               <div className="h-12 w-12 bg-gray-200 rounded-full flex items-center justify-center">
                                 {session.user.image ? (
-                                  <img 
-                                    src={session.user.image} 
+                                  <img
+                                    src={session.user.image}
                                     alt={session.user.name}
                                     className="h-12 w-12 rounded-full object-cover"
                                   />
@@ -527,45 +524,55 @@ const Navbar1 = ({
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* Menu Items */}
                           <div className="space-y-2">
                             {/* Dashboard - Only for Admin and Provider */}
-                            {session?.user && (session.user as any).role !== "CUSTOMER" && (
-                              <Button
-                                asChild
-                                variant="outline"
-                                className="border-orange-200 text-orange-600 hover:bg-orange-50 w-full justify-start"
-                              >
-                                <a href="/dashboard" className="flex items-center gap-2">
-                                  <Layout className="h-4 w-4" />
-                                  <span>Dashboard</span>
-                                </a>
-                              </Button>
-                            )}
-                            
+                            {session?.user &&
+                              (session.user as any).role !== "CUSTOMER" && (
+                                <Button
+                                  asChild
+                                  variant="outline"
+                                  className="border-orange-200 text-orange-600 hover:bg-orange-50 w-full justify-start"
+                                >
+                                  <a
+                                    href="/dashboard"
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Layout className="h-4 w-4" />
+                                    <span>Dashboard</span>
+                                  </a>
+                                </Button>
+                              )}
+
                             <Button
                               asChild
                               variant="outline"
                               className="border-orange-200 text-orange-600 hover:bg-orange-50 w-full justify-start"
                             >
-                              <a href="/profile" className="flex items-center gap-2">
+                              <a
+                                href="/profile"
+                                className="flex items-center gap-2"
+                              >
                                 <User className="h-4 w-4" />
                                 <span>Profile</span>
                               </a>
                             </Button>
-                            
+
                             <Button
                               asChild
                               variant="outline"
                               className="border-orange-200 text-orange-600 hover:bg-orange-50 w-full justify-start"
                             >
-                              <a href="/orders" className="flex items-center gap-2">
+                              <a
+                                href="/orders"
+                                className="flex items-center gap-2"
+                              >
                                 <Package className="h-4 w-4" />
                                 <span>My Orders</span>
                               </a>
                             </Button>
-                            
+
                             <Button
                               onClick={handleLogout}
                               variant="outline"

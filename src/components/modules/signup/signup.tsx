@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/field";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
-import { authClient } from "@/lib/auth-client";
+import { registerUser } from "@/services/auth/auth.service";
+import { jwtDecode } from "jwt-decode";
 import { registerSchema } from "@/lib/validators/auth";
 import { useRouter } from "next/navigation";
 
@@ -56,32 +57,38 @@ export function Signup({
       const toastId = toast.loading("Creating account...");
 
       try {
-        const { data, error } = await authClient.signUp.email({
+        const result = await registerUser({
           email: value.email,
           password: value.password,
+          confirmPassword: value.confirmPassword,
           name: value.name,
-          // Better Auth picks up additional fields based on backend config
-          // @ts-ignore
           phone: value.phone,
-          // @ts-ignore
           address: value.address,
-          // Add role based on selected role
-          role: value.role,
+          role: value.role as "CUSTOMER" | "PROVIDER",
         });
 
-        if (error) {
-          toast.error(error.message || "Failed to create account", {
+        if (!result.success) {
+          toast.error(result.message || "Failed to create account", {
             id: toastId,
           });
           return;
         }
 
         toast.success("Account created successfully!", { id: toastId });
-        
-        // Redirect based on user role
-        if ((data.user as any).role === "CUSTOMER") {
+
+        // Use token to get user info for redirection
+        const token = result.data?.accessToken;
+        if (!token) {
+          toast.success("Account created! Please log in.");
+          router.push("/login");
+          return;
+        }
+
+        const user: any = jwtDecode(token);
+
+        if (user.role === "CUSTOMER") {
           router.push("/browse");
-        } else if ((data.user as any).role === "PROVIDER") {
+        } else if (user.role === "PROVIDER") {
           router.push("/dashboard");
         }
         router.refresh();
@@ -147,7 +154,9 @@ export function Signup({
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Email Address</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        Email Address
+                      </FieldLabel>
                       <Input
                         type="email"
                         id={field.name}
@@ -197,7 +206,9 @@ export function Signup({
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Delivery Address</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        Delivery Address
+                      </FieldLabel>
                       <Textarea
                         id={field.name}
                         name={field.name}
@@ -223,7 +234,9 @@ export function Signup({
                     field.state.meta.isTouched && !field.state.meta.isValid;
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>I want to sign up as</FieldLabel>
+                      <FieldLabel htmlFor={field.name}>
+                        I want to sign up as
+                      </FieldLabel>
                       <Select
                         value={field.state.value}
                         onValueChange={(value) => field.handleChange(value)}
@@ -232,8 +245,12 @@ export function Signup({
                           <SelectValue placeholder="Select your role" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="CUSTOMER">Customer - I want to order food</SelectItem>
-                          <SelectItem value="PROVIDER">Provider - I want to sell food</SelectItem>
+                          <SelectItem value="CUSTOMER">
+                            Customer - I want to order food
+                          </SelectItem>
+                          <SelectItem value="PROVIDER">
+                            Provider - I want to sell food
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       {isInvalid && (
