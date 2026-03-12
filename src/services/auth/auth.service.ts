@@ -14,12 +14,21 @@ export const registerUser = async (userData: RegisterInput) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(userData),
+      credentials: "include",
     });
     const result = await res.json();
 
     if (result.success) {
-      const storeCookie = await cookies();
-      storeCookie.set("token", result.data.accessToken || result.data.token);
+      (await cookies()).set(
+        "token",
+        result.data.accessToken || result.data.token,
+        {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          path: "/",
+        },
+      );
     }
 
     return result;
@@ -37,14 +46,21 @@ export const loginUser = async (userData: LoginInput) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(userData),
+      credentials: "include",
     });
     const result = await res.json();
 
     if (result.success) {
-      const storeCookie = await cookies();
-      // The backend returns accessToken in data.accessToken
-      const token = result.data.accessToken || result.data.token;
-      storeCookie.set("token", token);
+      (await cookies()).set(
+        "token",
+        result.data.accessToken || result.data.token,
+        {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          path: "/",
+        },
+      );
     }
 
     return result;
