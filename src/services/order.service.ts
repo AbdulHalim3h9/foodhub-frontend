@@ -120,10 +120,7 @@ class OrderService {
           "Content-Type": "application/json",
           ...(token && { Authorization: token }),
         },
-        next: {
-          revalidate: options?.revalidate ?? 60,
-          tags: options?.tags ?? ["orders"],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -175,10 +172,7 @@ class OrderService {
           "Content-Type": "application/json",
           ...(token && { Authorization: token }),
         },
-        next: {
-          revalidate: options?.revalidate ?? 60,
-          tags: options?.tags ?? ["provider-orders"],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -217,10 +211,7 @@ class OrderService {
           "Content-Type": "application/json",
           ...(token && { Authorization: token }),
         },
-        next: {
-          revalidate: options?.revalidate ?? 60,
-          tags: options?.tags ?? [`order-${id}`],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -258,10 +249,7 @@ class OrderService {
           ...(token && { Authorization: token }),
         },
         body: JSON.stringify(orderData),
-        next: {
-          revalidate: options?.revalidate ?? 0,
-          tags: options?.tags ?? ["orders"],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -300,10 +288,7 @@ class OrderService {
           ...(token && { Authorization: token }),
         },
         body: JSON.stringify({ status }),
-        next: {
-          revalidate: options?.revalidate ?? 0,
-          tags: options?.tags ?? [`order-${id}`],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -359,10 +344,7 @@ class OrderService {
           "Content-Type": "application/json",
           ...(token && { Authorization: token }),
         },
-        next: {
-          revalidate: options?.revalidate ?? 60,
-          tags: options?.tags ?? ["orders"],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {

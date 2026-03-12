@@ -67,10 +67,7 @@ class CartService {
           "Content-Type": "application/json",
           ...(token && { Authorization: token }),
         },
-        next: {
-          revalidate: options?.revalidate ?? 0,
-          tags: options?.tags ?? ["cart"],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -108,10 +105,7 @@ class CartService {
           ...(token && { Authorization: token }),
         },
         body: JSON.stringify(itemData),
-        next: {
-          revalidate: options?.revalidate ?? 0,
-          tags: options?.tags ?? ["cart"],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -152,10 +146,7 @@ class CartService {
           ...(token && { Authorization: token }),
         },
         body: JSON.stringify({ quantity }),
-        next: {
-          revalidate: options?.revalidate ?? 0,
-          tags: options?.tags ?? ["cart"],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -194,10 +185,7 @@ class CartService {
           "Content-Type": "application/json",
           ...(token && { Authorization: token }),
         },
-        next: {
-          revalidate: options?.revalidate ?? 0,
-          tags: options?.tags ?? ["cart"],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {
@@ -234,10 +222,7 @@ class CartService {
           "Content-Type": "application/json",
           ...(token && { Authorization: token }),
         },
-        next: {
-          revalidate: options?.revalidate ?? 0,
-          tags: options?.tags ?? ["cart"],
-        },
+        cache: "no-store",
       });
 
       if (!response.ok) {

@@ -82,10 +82,7 @@ class ProfileService {
           "Content-Type": "application/json",
           ...(token && { Authorization: token }),
         },
-        next: {
-          revalidate: options?.revalidate ?? 60,
-          tags: options?.tags ?? ["profile"],
-        },
+        cache: "no-store",
       });
 
       console.log("📡 Response status:", response.status);
@@ -135,10 +132,6 @@ class ProfileService {
           ...(token && { Authorization: token }),
         },
         body: JSON.stringify(updateData),
-        next: {
-          revalidate: options?.revalidate ?? 0,
-          tags: options?.tags ?? ["profile", "provider-profile"],
-        },
       });
 
       if (!response.ok) {
@@ -178,10 +171,6 @@ class ProfileService {
           ...(token && { Authorization: token }),
         },
         body: JSON.stringify(updateData),
-        next: {
-          revalidate: options?.revalidate ?? 0,
-          tags: options?.tags ?? ["profile"],
-        },
       });
 
       if (!response.ok) {

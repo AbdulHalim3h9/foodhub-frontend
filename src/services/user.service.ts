@@ -91,10 +91,6 @@ class UserService {
         "Content-Type": "application/json",
         ...(token && { Authorization: token }),
       },
-      next: {
-        revalidate: options?.revalidate ?? 60,
-        tags: options?.tags ?? ["users"],
-      },
     });
 
     if (!response.ok) {
@@ -115,10 +111,6 @@ class UserService {
       headers: {
         "Content-Type": "application/json",
         ...(token && { Authorization: token }),
-      },
-      next: {
-        revalidate: options?.revalidate ?? 60,
-        tags: options?.tags ?? [`user-${id}`],
       },
     });
 
@@ -146,10 +138,6 @@ class UserService {
         ...(token && { Authorization: token }),
       },
       body: JSON.stringify({ status }),
-      next: {
-        revalidate: options?.revalidate ?? 0,
-        tags: options?.tags ?? [`user-${id}`],
-      },
     });
 
     if (!response.ok) {
@@ -182,10 +170,6 @@ class UserService {
         ...(token && { Authorization: token }),
       },
       body: JSON.stringify(userData),
-      next: {
-        revalidate: options?.revalidate ?? 0,
-        tags: options?.tags ?? [`user-${id}`],
-      },
     });
 
     if (!response.ok) {
@@ -205,10 +189,6 @@ class UserService {
       headers: {
         "Content-Type": "application/json",
         ...(token && { Authorization: token }),
-      },
-      next: {
-        revalidate: options?.revalidate ?? 0,
-        tags: options?.tags ?? [`user-${id}`],
       },
     });
 
