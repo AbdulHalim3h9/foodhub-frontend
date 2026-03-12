@@ -79,21 +79,17 @@ class UserService {
     const url = searchParams.toString()
       ? `${this.baseUrl}?${searchParams.toString()}`
       : this.baseUrl;
-    
-    // Build cookie header for server-side requests
+
     const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((c) => `${c.name}=${c.value}`)
-      .join('; ');
-    
-    console.log("Cookie header:", cookieHeader);
-    
+    const token = cookieStore.get("token")?.value;
+
+    console.log("Token:", token ? "Present" : "Missing");
+
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(cookieHeader && { Cookie: cookieHeader }),
+        ...(token && { Authorization: token }),
       },
       next: {
         revalidate: options?.revalidate ?? 60,
@@ -110,19 +106,15 @@ class UserService {
 
   async getUserById(id: string, options?: ServiceOptions): Promise<User> {
     console.log("Fetching user by ID:", id);
-    
-    // Build cookie header for server-side requests
+
     const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((c) => `${c.name}=${c.value}`)
-      .join('; ');
-    
+    const token = cookieStore.get("token")?.value;
+
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(cookieHeader && { Cookie: cookieHeader }),
+        ...(token && { Authorization: token }),
       },
       next: {
         revalidate: options?.revalidate ?? 60,
@@ -143,19 +135,15 @@ class UserService {
     options?: ServiceOptions,
   ): Promise<User> {
     console.log("Updating user status:", id, status);
-    
-    // Build cookie header for server-side requests
+
     const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((c) => `${c.name}=${c.value}`)
-      .join('; ');
-    
+    const token = cookieStore.get("token")?.value;
+
     const response = await fetch(`${this.baseUrl}/${id}/status`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        ...(cookieHeader && { Cookie: cookieHeader }),
+        ...(token && { Authorization: token }),
       },
       body: JSON.stringify({ status }),
       next: {
@@ -183,19 +171,15 @@ class UserService {
     options?: ServiceOptions,
   ): Promise<User> {
     console.log("Updating user:", id, userData);
-    
-    // Build cookie header for server-side requests
+
     const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((c) => `${c.name}=${c.value}`)
-      .join('; ');
-    
+    const token = cookieStore.get("token")?.value;
+
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        ...(cookieHeader && { Cookie: cookieHeader }),
+        ...(token && { Authorization: token }),
       },
       body: JSON.stringify(userData),
       next: {
@@ -213,18 +197,14 @@ class UserService {
 
   async deleteUser(id: string, options?: ServiceOptions): Promise<void> {
     console.log("Deleting user:", id);
-    
-    // Build cookie header for server-side requests
+
     const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((c) => `${c.name}=${c.value}`)
-      .join('; ');
+    const token = cookieStore.get("token")?.value;
     const response = await fetch(`${this.baseUrl}/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        ...(cookieHeader && { Cookie: cookieHeader }),
+        ...(token && { Authorization: token }),
       },
       next: {
         revalidate: options?.revalidate ?? 0,

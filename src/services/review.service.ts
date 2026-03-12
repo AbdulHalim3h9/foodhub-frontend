@@ -63,10 +63,7 @@ class ReviewService {
   }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
+      const token = cookieStore.get("token")?.value;
 
       const searchParams = new URLSearchParams();
 
@@ -85,7 +82,7 @@ class ReviewService {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         next: {
           revalidate: options?.revalidate ?? 60,
@@ -124,16 +121,13 @@ class ReviewService {
   }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.basePath}/${mealId}/reviews`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         body: JSON.stringify(data),
         next: {
@@ -186,22 +180,22 @@ class ReviewService {
   }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
+      const token = cookieStore.get("token")?.value;
 
-      const response = await fetch(`${this.basePath}/${mealId}/reviews/${reviewId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+      const response = await fetch(
+        `${this.basePath}/${mealId}/reviews/${reviewId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: token }),
+          },
+          next: {
+            revalidate: options?.revalidate ?? 0,
+            tags: options?.tags ?? [`meal-${mealId}-reviews`],
+          },
         },
-        next: {
-          revalidate: options?.revalidate ?? 0,
-          tags: options?.tags ?? [`meal-${mealId}-reviews`],
-        },
-      });
+      );
 
       if (!response.ok) {
         let errorMessage = `Failed to delete review: ${response.statusText}`;

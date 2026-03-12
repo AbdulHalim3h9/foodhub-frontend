@@ -40,7 +40,7 @@ export interface UpdateProviderProfileData {
   phone?: string;
   address?: string;
   image?: string;
-  
+
   // Provider profile fields
   businessName?: string;
   description?: string;
@@ -69,21 +69,18 @@ class ProfileService {
   ): Promise<{ data: UserProfile | null; error: { message: string } | null }> {
     try {
       console.log("🔍 Making API call to:", `${this.baseUrl}/me`);
-      
+
       // Build cookie header for server-side requests
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+      const token = cookieStore.get("token")?.value;
 
-      console.log("🍪 Cookie header:", cookieHeader);
+      console.log("🍪 Token:", token ? "Present" : "Missing");
 
       const response = await fetch(`${this.baseUrl}/me`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         next: {
           revalidate: options?.revalidate ?? 60,
@@ -92,14 +89,19 @@ class ProfileService {
       });
 
       console.log("📡 Response status:", response.status);
-      console.log("📡 Response headers:", Object.fromEntries(response.headers.entries()));
+      console.log(
+        "📡 Response headers:",
+        Object.fromEntries(response.headers.entries()),
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ API Error Response:", errorText);
-        return { 
-          data: null, 
-          error: { message: `Failed to fetch profile: ${response.statusText} (${response.status})` } 
+        return {
+          data: null,
+          error: {
+            message: `Failed to fetch profile: ${response.statusText} (${response.status})`,
+          },
         };
       }
 
@@ -108,9 +110,12 @@ class ProfileService {
       return { data, error: null };
     } catch (error) {
       console.error("❌ Fetch Error:", error);
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
@@ -121,16 +126,13 @@ class ProfileService {
   ): Promise<{ data: UserProfile | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}/provider/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         body: JSON.stringify(updateData),
         next: {
@@ -140,18 +142,23 @@ class ProfileService {
       });
 
       if (!response.ok) {
-        return { 
-          data: null, 
-          error: { message: `Failed to update provider profile: ${response.statusText}` } 
+        return {
+          data: null,
+          error: {
+            message: `Failed to update provider profile: ${response.statusText}`,
+          },
         };
       }
 
       const data = await response.json();
       return { data: data.data, error: null };
     } catch (error) {
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
@@ -162,16 +169,13 @@ class ProfileService {
   ): Promise<{ data: UserProfile | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}/me`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         body: JSON.stringify(updateData),
         next: {
@@ -181,18 +185,23 @@ class ProfileService {
       });
 
       if (!response.ok) {
-        return { 
-          data: null, 
-          error: { message: `Failed to update profile: ${response.statusText}` } 
+        return {
+          data: null,
+          error: {
+            message: `Failed to update profile: ${response.statusText}`,
+          },
         };
       }
 
       const data = await response.json();
       return { data: data.data, error: null };
     } catch (error) {
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
