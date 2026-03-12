@@ -4,7 +4,7 @@ import {
   registerUser,
   loginUser,
   logoutUser,
-} from "@/services/auth/auth.service";
+} from "@/services/auth.service";
 
 export type AuthState = {
   errors?: Record<string, string[]>;

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/field";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
-import { registerUser } from "@/services/auth/auth.service";
+import { registerUser } from "@/services/auth.service";
 import { jwtDecode } from "jwt-decode";
 import { registerSchema } from "@/lib/validators/auth";
 import { useRouter } from "next/navigation";

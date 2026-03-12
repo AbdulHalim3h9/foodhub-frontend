@@ -19,7 +19,7 @@ import {
   LogOut,
   User,
 } from "lucide-react";
-import { logoutUser } from "@/services/auth/auth.service";
+import { logoutUser } from "@/services/auth.service";
 
 import {
   Sidebar,

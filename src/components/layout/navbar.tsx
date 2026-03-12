@@ -19,7 +19,7 @@ import {
 import { getCategories } from "@/actions/category.action";
 import { Category } from "@/services/category.service";
 import { useState, useEffect } from "react";
-import { getUser, logoutUser } from "@/services/auth/auth.service";
+import { getUser, logoutUser } from "@/services/auth.service";
 import { useRouter } from "next/navigation";
 import { getCartCount } from "@/actions/cart.action";
 
