@@ -100,10 +100,7 @@ class OrderService {
   }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
+      const token = cookieStore.get("token")?.value;
 
       const searchParams = new URLSearchParams();
 
@@ -121,7 +118,7 @@ class OrderService {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         next: {
           revalidate: options?.revalidate ?? 60,
@@ -158,10 +155,7 @@ class OrderService {
   }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
+      const token = cookieStore.get("token")?.value;
 
       const searchParams = new URLSearchParams();
 
@@ -179,7 +173,7 @@ class OrderService {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         next: {
           revalidate: options?.revalidate ?? 60,
@@ -215,16 +209,13 @@ class OrderService {
   ): Promise<{ data: Order | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}/${id}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         next: {
           revalidate: options?.revalidate ?? 60,
@@ -258,16 +249,13 @@ class OrderService {
   ): Promise<{ data: Order | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         body: JSON.stringify(orderData),
         next: {
@@ -303,16 +291,13 @@ class OrderService {
   ): Promise<{ data: Order | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}/${id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         body: JSON.stringify({ status }),
         next: {
@@ -354,10 +339,7 @@ class OrderService {
     // For admin, use the /all endpoint to get all orders from all users
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join("; ");
+      const token = cookieStore.get("token")?.value;
 
       const searchParams = new URLSearchParams();
 
@@ -375,7 +357,7 @@ class OrderService {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         next: {
           revalidate: options?.revalidate ?? 60,
@@ -386,7 +368,9 @@ class OrderService {
       if (!response.ok) {
         return {
           data: null,
-          error: { message: `Failed to fetch all orders: ${response.statusText}` },
+          error: {
+            message: `Failed to fetch all orders: ${response.statusText}`,
+          },
         };
       }
 
@@ -396,7 +380,8 @@ class OrderService {
       return {
         data: null,
         error: {
-          message: error instanceof Error ? error.message : "Something Went Wrong",
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
         },
       };
     }

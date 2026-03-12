@@ -53,20 +53,19 @@ class CartService {
     this.baseUrl = `${API_URL}/cart`;
   }
 
-  async getCart(options?: ServiceOptions): Promise<{ data: Cart | null; error: { message: string } | null }> {
+  async getCart(
+    options?: ServiceOptions,
+  ): Promise<{ data: Cart | null; error: { message: string } | null }> {
     try {
       // Build cookie header for server-side requests
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         next: {
           revalidate: options?.revalidate ?? 0,
@@ -75,35 +74,38 @@ class CartService {
       });
 
       if (!response.ok) {
-        return { 
-          data: null, 
-          error: { message: `Failed to fetch cart: ${response.statusText}` } 
+        return {
+          data: null,
+          error: { message: `Failed to fetch cart: ${response.statusText}` },
         };
       }
 
       const data = await response.json();
       return { data, error: null };
     } catch (error) {
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
 
-  async addItemToCart(itemData: AddToCartData, options?: ServiceOptions): Promise<{ data: CartItem | null; error: { message: string } | null }> {
+  async addItemToCart(
+    itemData: AddToCartData,
+    options?: ServiceOptions,
+  ): Promise<{ data: CartItem | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}/items`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         body: JSON.stringify(itemData),
         next: {
@@ -113,35 +115,41 @@ class CartService {
       });
 
       if (!response.ok) {
-        return { 
-          data: null, 
-          error: { message: `Failed to add item to cart: ${response.statusText}` } 
+        return {
+          data: null,
+          error: {
+            message: `Failed to add item to cart: ${response.statusText}`,
+          },
         };
       }
 
       const data = await response.json();
       return { data, error: null };
     } catch (error) {
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
 
-  async updateItemQuantity(mealId: string, quantity: number, options?: ServiceOptions): Promise<{ data: Cart | null; error: { message: string } | null }> {
+  async updateItemQuantity(
+    mealId: string,
+    quantity: number,
+    options?: ServiceOptions,
+  ): Promise<{ data: Cart | null; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}/items/${mealId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         body: JSON.stringify({ quantity }),
         next: {
@@ -151,35 +159,40 @@ class CartService {
       });
 
       if (!response.ok) {
-        return { 
-          data: null, 
-          error: { message: `Failed to update item quantity: ${response.statusText}` } 
+        return {
+          data: null,
+          error: {
+            message: `Failed to update item quantity: ${response.statusText}`,
+          },
         };
       }
 
       const data = await response.json();
       return { data, error: null };
     } catch (error) {
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
 
-  async removeItemFromCart(mealId: string, options?: ServiceOptions): Promise<{ success: boolean; error: { message: string } | null }> {
+  async removeItemFromCart(
+    mealId: string,
+    options?: ServiceOptions,
+  ): Promise<{ success: boolean; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}/items/${mealId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         next: {
           revalidate: options?.revalidate ?? 0,
@@ -188,34 +201,38 @@ class CartService {
       });
 
       if (!response.ok) {
-        return { 
-          success: false, 
-          error: { message: `Failed to remove item from cart: ${response.statusText}` } 
+        return {
+          success: false,
+          error: {
+            message: `Failed to remove item from cart: ${response.statusText}`,
+          },
         };
       }
 
       return { success: true, error: null };
     } catch (error) {
-      return { 
-        success: false, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        success: false,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
 
-  async clearCart(options?: ServiceOptions): Promise<{ success: boolean; error: { message: string } | null }> {
+  async clearCart(
+    options?: ServiceOptions,
+  ): Promise<{ success: boolean; error: { message: string } | null }> {
     try {
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         next: {
           revalidate: options?.revalidate ?? 0,
@@ -224,17 +241,20 @@ class CartService {
       });
 
       if (!response.ok) {
-        return { 
-          success: false, 
-          error: { message: `Failed to clear cart: ${response.statusText}` } 
+        return {
+          success: false,
+          error: { message: `Failed to clear cart: ${response.statusText}` },
         };
       }
 
       return { success: true, error: null };
     } catch (error) {
-      return { 
-        success: false, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        success: false,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }

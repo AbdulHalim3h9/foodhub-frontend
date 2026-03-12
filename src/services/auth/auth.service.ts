@@ -19,16 +19,7 @@ export const registerUser = async (userData: RegisterInput) => {
     const result = await res.json();
 
     if (result.success) {
-      (await cookies()).set(
-        "token",
-        result.data.accessToken || result.data.token,
-        {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-          path: "/",
-        },
-      );
+      (await cookies()).set("token", result.data.accessToken || result.data.token);
     }
 
     return result;
@@ -51,16 +42,7 @@ export const loginUser = async (userData: LoginInput) => {
     const result = await res.json();
 
     if (result.success) {
-      (await cookies()).set(
-        "token",
-        result.data.accessToken || result.data.token,
-        {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-          path: "/",
-        },
-      );
+      (await cookies()).set("token", result.data.accessToken || result.data.token);
     }
 
     return result;

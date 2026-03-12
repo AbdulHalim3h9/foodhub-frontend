@@ -32,16 +32,13 @@ class CurrentUserService {
     try {
       // Build cookie header for server-side requests
       const cookieStore = await cookies();
-      const cookieHeader = cookieStore
-        .getAll()
-        .map((c) => `${c.name}=${c.value}`)
-        .join('; ');
+      const token = cookieStore.get("token")?.value;
 
       const response = await fetch(`${this.baseUrl}/me`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          ...(cookieHeader && { Cookie: cookieHeader }),
+          ...(token && { Authorization: token }),
         },
         next: {
           revalidate: options?.revalidate ?? 60,
@@ -50,27 +47,32 @@ class CurrentUserService {
       });
 
       if (!response.ok) {
-        return { 
-          data: null, 
-          error: { message: `Failed to fetch user profile: ${response.statusText}` } 
+        return {
+          data: null,
+          error: {
+            message: `Failed to fetch user profile: ${response.statusText}`,
+          },
         };
       }
 
       const data = await response.json();
-      
+
       // Backend returns user data directly, not wrapped in success property
       if (data && data.id) {
         return { data, error: null };
       } else {
-        return { 
-          data: null, 
-          error: { message: 'Invalid user data received' } 
+        return {
+          data: null,
+          error: { message: "Invalid user data received" },
         };
       }
     } catch (error) {
-      return { 
-        data: null, 
-        error: { message: error instanceof Error ? error.message : "Something Went Wrong" } 
+      return {
+        data: null,
+        error: {
+          message:
+            error instanceof Error ? error.message : "Something Went Wrong",
+        },
       };
     }
   }
