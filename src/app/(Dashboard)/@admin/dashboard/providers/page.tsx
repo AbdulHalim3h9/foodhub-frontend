@@ -63,7 +63,12 @@ export default function AdminProviders() {
 
       const params: GetProvidersParams = {
         search: searchTerm || undefined,
-        isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : undefined,
+        isActive:
+          statusFilter === "active"
+            ? true
+            : statusFilter === "inactive"
+              ? false
+              : undefined,
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
       };
@@ -289,44 +294,62 @@ export default function AdminProviders() {
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
             {pagination.total} providers
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+              onClick={() =>
+                setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
+              }
               disabled={pagination.page <= 1}
             >
               <ChevronLeft className="size-4" />
               Previous
             </Button>
             <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                const pageNum = i + 1;
-                const isActive = pageNum === pagination.page;
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={isActive ? "default" : "outline"}
-                    size="sm"
-                    className="size-8 p-0"
-                    onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
+              {Array.from(
+                { length: Math.min(5, pagination.totalPages) },
+                (_, i) => {
+                  const pageNum = i + 1;
+                  const isActive = pageNum === pagination.page;
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={isActive ? "default" : "outline"}
+                      size="sm"
+                      className="size-8 p-0"
+                      onClick={() =>
+                        setPagination((prev) => ({ ...prev, page: pageNum }))
+                      }
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                },
+              )}
               {pagination.totalPages > 5 && (
                 <>
-                  <span className="px-2 text-sm text-muted-foreground">...</span>
+                  <span className="px-2 text-sm text-muted-foreground">
+                    ...
+                  </span>
                   <Button
-                    variant={pagination.page === pagination.totalPages ? "default" : "outline"}
+                    variant={
+                      pagination.page === pagination.totalPages
+                        ? "default"
+                        : "outline"
+                    }
                     size="sm"
                     className="size-8 p-0"
-                    onClick={() => setPagination(prev => ({ ...prev, page: pagination.totalPages }))}
+                    onClick={() =>
+                      setPagination((prev) => ({
+                        ...prev,
+                        page: pagination.totalPages,
+                      }))
+                    }
                   >
                     {pagination.totalPages}
                   </Button>
@@ -336,7 +359,9 @@ export default function AdminProviders() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+              onClick={() =>
+                setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
+              }
               disabled={pagination.page >= pagination.totalPages}
             >
               Next

@@ -258,19 +258,21 @@ export default function AdminUsers() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           label="Active Users"
-          value={users.filter(u => u.status === 'active').length.toString()}
+          value={users.filter((u) => u.status === "active").length.toString()}
           icon={<Check className="size-5 text-green-600" />}
           className="bg-green-50/50 border-green-100"
         />
         <StatsCard
           label="Suspended"
-          value={users.filter(u => u.status === 'suspended').length.toString()}
+          value={users
+            .filter((u) => u.status === "suspended")
+            .length.toString()}
           icon={<X className="size-5 text-red-600" />}
           className="bg-red-50/50 border-red-100"
         />
         <StatsCard
           label="Inactive"
-          value={users.filter(u => u.status === 'inactive').length.toString()}
+          value={users.filter((u) => u.status === "inactive").length.toString()}
           icon={<Clock className="size-5 text-gray-600" />}
           className="bg-gray-50/50 border-gray-100"
         />

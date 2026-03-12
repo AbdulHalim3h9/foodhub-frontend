@@ -98,7 +98,9 @@ export default function AdminDashboard() {
     return (
       <div className="flex flex-col gap-6 p-6">
         <div className="text-center py-12">
-          <p className="text-red-600">{error || "Failed to load dashboard data"}</p>
+          <p className="text-red-600">
+            {error || "Failed to load dashboard data"}
+          </p>
         </div>
       </div>
     );
@@ -191,9 +193,13 @@ export default function AdminDashboard() {
                 <TableBody>
                   {stats.recentOrders.map((order: any) => (
                     <TableRow key={order.id} className="hover:bg-muted/50">
-                      <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                      <TableCell>{order.customer?.name || 'N/A'}</TableCell>
-                      <TableCell>{order.provider?.businessName || 'N/A'}</TableCell>
+                      <TableCell className="font-medium">
+                        {order.orderNumber}
+                      </TableCell>
+                      <TableCell>{order.customer?.name || "N/A"}</TableCell>
+                      <TableCell>
+                        {order.provider?.businessName || "N/A"}
+                      </TableCell>
                       <TableCell className="font-medium">
                         ${Number(order.totalAmount).toFixed(2)}
                       </TableCell>
@@ -204,7 +210,10 @@ export default function AdminDashboard() {
                   ))}
                   {stats.recentOrders.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-8 text-muted-foreground"
+                      >
                         No orders found
                       </TableCell>
                     </TableRow>
@@ -219,9 +228,7 @@ export default function AdminDashboard() {
         <Card className="border-none shadow-md">
           <CardHeader>
             <CardTitle>Top Providers</CardTitle>
-            <CardDescription>
-              Highest order count partners.
-            </CardDescription>
+            <CardDescription>Highest order count partners.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
@@ -242,9 +249,7 @@ export default function AdminDashboard() {
                     <p className="font-bold text-sm">
                       ${provider.totalRevenue.toFixed(0)}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      Revenue
-                    </p>
+                    <p className="text-xs text-muted-foreground">Revenue</p>
                   </div>
                 </div>
               ))}
@@ -291,8 +296,7 @@ function StatusBadge({ status }: { status: string }) {
       "bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200",
     CONFIRMED:
       "bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200",
-    CANCELLED:
-      "bg-red-100 text-red-700 hover:bg-red-100 border-red-200",
+    CANCELLED: "bg-red-100 text-red-700 hover:bg-red-100 border-red-200",
   };
 
   return (
