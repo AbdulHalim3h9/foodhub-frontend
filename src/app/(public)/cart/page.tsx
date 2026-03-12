@@ -102,7 +102,7 @@ export default function CartPage() {
     try {
       setOrdering(mealId);
       // Navigate to meal details page with order now trigger
-      window.location.href = `/browse/meal/${mealName.toLowerCase().replace(/\s+/g, "-")}?orderNow=true`;
+      window.location.href = `/browse/meal/${mealId}?orderNow=true`;
     } catch (error) {
       console.error("Error navigating to order:", error);
     } finally {
