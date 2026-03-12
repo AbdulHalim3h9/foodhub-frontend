@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getMeals } from "@/actions/menu.action";
+import { getMeals } from "@/actions/meal.action";
 import { getCategories } from "@/actions/category.action";
 import { getCuisines } from "@/actions/cuisine.action";
 import { Meal } from "@/types";

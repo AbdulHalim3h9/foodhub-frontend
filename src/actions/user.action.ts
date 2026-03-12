@@ -7,10 +7,7 @@ import {
 
 export async function getUsers(params: GetUsersParams = {}) {
   try {
-    const result = await userService.getAllUsers(params, {
-      revalidate: 60,
-      tags: ["users"],
-    });
+    const result = await userService.getAllUsers(params);
     return { success: true, data: result };
   } catch (error) {
     console.error("Failed to fetch users:", error);
@@ -23,10 +20,7 @@ export async function getUsers(params: GetUsersParams = {}) {
 
 export async function getUserById(id: string) {
   try {
-    const result = await userService.getUserById(id, {
-      revalidate: 60,
-      tags: [`user-${id}`],
-    });
+    const result = await userService.getUserById(id);
     return { success: true, data: result };
   } catch (error) {
     console.error("Failed to fetch user:", error);
@@ -42,10 +36,7 @@ export async function updateUserStatus(
   status: "active" | "inactive" | "suspended"
 ) {
   try {
-    const result = await userService.updateUserStatus(id, status, {
-      revalidate: 0,
-      tags: [`user-${id}`],
-    });
+    const result = await userService.updateUserStatus(id, status);
     return { success: true, data: result };
   } catch (error) {
     console.error("Failed to update user status:", error);
@@ -67,10 +58,7 @@ export async function updateUser(
   }
 ) {
   try {
-    const result = await userService.updateUser(id, userData, {
-      revalidate: 0,
-      tags: [`user-${id}`],
-    });
+    const result = await userService.updateUser(id, userData);
     return { success: true, data: result };
   } catch (error) {
     console.error("Failed to update user:", error);
@@ -83,10 +71,7 @@ export async function updateUser(
 
 export async function deleteUser(id: string) {
   try {
-    await userService.deleteUser(id, {
-      revalidate: 0,
-      tags: [`user-${id}`],
-    });
+    await userService.deleteUser(id);
     return { success: true };
   } catch (error) {
     console.error("Failed to delete user:", error);

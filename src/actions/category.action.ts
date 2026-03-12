@@ -1,13 +1,10 @@
 "use server";
 
-import { categoryService } from "@/services/category.service";
-import { Category } from "@/services/category.service";
+import { categoryService, Category } from "@/services/category.service";
 
 export async function getCategories(queryParams: any = {}): Promise<{ success: boolean; data: Category[] | null; error: string | null }> {
   try {
-    const result = await categoryService.getCategories(queryParams, {
-      revalidate: 3600,
-    });
+    const result = await categoryService.getCategories(queryParams);
     
     if (result.error) {
       return { 

@@ -7,10 +7,7 @@ import {
 
 export async function getProviders(params: GetProvidersParams = {}) {
   try {
-    const result = await providerService.getAllProviders(params, {
-      revalidate: 60,
-      tags: ["providers"],
-    });
+    const result = await providerService.getAllProviders(params);
     return { success: true, data: result };
   } catch (error) {
     console.error("Failed to fetch providers:", error);
@@ -23,10 +20,7 @@ export async function getProviders(params: GetProvidersParams = {}) {
 
 export async function getProviderById(id: string) {
   try {
-    const result = await providerService.getProviderById(id, {
-      revalidate: 60,
-      tags: [`provider-${id}`],
-    });
+    const result = await providerService.getProviderById(id);
     return { success: true, data: result };
   } catch (error) {
     console.error("Failed to fetch provider:", error);

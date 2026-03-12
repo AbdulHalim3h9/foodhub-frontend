@@ -15,17 +15,14 @@ export async function getDashboardStats() {
 
     // Fetch data in parallel
     const [usersData, ordersData, providersData] = await Promise.all([
-      userService.getAllUsers({ limit: "1000" }, { revalidate: 0 }),
-      orderService.getAllOrders({ limit: "1000" }, { revalidate: 0 }),
-      providerService.getAllProviders({ limit: "1000" }, { revalidate: 0 }),
+      userService.getAllUsers({ limit: "1000" }),
+      orderService.getAllOrders({ limit: "1000" }),
+      providerService.getAllProviders({ limit: "1000" }),
     ]);
 
     const users = usersData.data || [];
     const orders = ordersData.data?.data || [];
     const providers = providersData.data || [];
-
-    console.log("Dashboard Debug - Orders:", orders);
-    console.log("Dashboard Debug - OrdersData:", ordersData);
 
     // Calculate stats
     const totalOrders = orders.length;

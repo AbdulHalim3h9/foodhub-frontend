@@ -7,7 +7,7 @@ import {
   CreateReviewData,
   GetReviewsParams,
 } from "@/services/review.service";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 
 // Get reviews for a meal
 export async function getMealReviews(
@@ -19,10 +19,7 @@ export async function getMealReviews(
   error: string | null;
 }> {
   try {
-    const result = await reviewService.getMealReviews(mealId, params, {
-      revalidate: 60,
-      tags: [`meal-${mealId}-reviews`],
-    });
+    const result = await reviewService.getMealReviews(mealId, params);
 
     if (result.error) {
       return {
@@ -56,10 +53,7 @@ export async function createMealReview(
   reviewData: CreateReviewData,
 ): Promise<{ success: boolean; data: Review | null; error: string | null }> {
   try {
-    const result = await reviewService.createReview(mealId, reviewData, {
-      revalidate: 0,
-      tags: [`meal-${mealId}-reviews`],
-    });
+    const result = await reviewService.createReview(mealId, reviewData);
 
     if (result.error) {
       return {
@@ -95,10 +89,7 @@ export async function deleteMealReview(
   reviewId: string,
 ): Promise<{ success: boolean; error: string | null }> {
   try {
-    const result = await reviewService.deleteReview(mealId, reviewId, {
-      revalidate: 0,
-      tags: [`meal-${mealId}-reviews`],
-    });
+    const result = await reviewService.deleteReview(mealId, reviewId);
 
     if (result.error) {
       return {

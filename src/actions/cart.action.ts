@@ -8,9 +8,7 @@ export async function getCart(): Promise<{ success: boolean; data: Cart | null; 
   try {
     console.log("🛒 Fetching user cart");
     
-    const result = await cartService.getCart(
-      { revalidate: 0, tags: ["cart"] }
-    );
+    const result = await cartService.getCart();
 
     if (result.error) {
       console.error("❌ Failed to fetch cart:", result.error.message);
@@ -47,9 +45,7 @@ export async function getCartCount(): Promise<{ success: boolean; count: number;
   try {
     console.log("🛒 Fetching cart count");
     
-    const result = await cartService.getCart(
-      { revalidate: 0, tags: ["cart"] }
-    );
+    const result = await cartService.getCart();
 
     if (result.error) {
       console.error("❌ Failed to fetch cart:", result.error.message);
@@ -86,10 +82,7 @@ export async function addItemToCart(itemData: AddToCartData): Promise<{ success:
   try {
     console.log(`🛒 Adding item to cart: ${itemData.mealId} (qty: ${itemData.quantity})`);
     
-    const result = await cartService.addItemToCart(
-      itemData,
-      { revalidate: 0, tags: ["cart"] }
-    );
+    const result = await cartService.addItemToCart(itemData);
 
     if (result.error) {
       console.error("❌ Failed to add item to cart:", result.error.message);
@@ -133,11 +126,7 @@ export async function updateItemQuantity(mealId: string, quantity: number): Prom
       return { success: result.success, data: null, error: result.error };
     }
     
-    const result = await cartService.updateItemQuantity(
-      mealId,
-      quantity,
-      { revalidate: 0, tags: ["cart"] }
-    );
+    const result = await cartService.updateItemQuantity(mealId, quantity);
 
     if (result.error) {
       console.error("❌ Failed to update item quantity:", result.error.message);
@@ -175,10 +164,7 @@ export async function removeItemFromCart(mealId: string): Promise<{ success: boo
   try {
     console.log(`🛒 Removing item from cart: ${mealId}`);
     
-    const result = await cartService.removeItemFromCart(
-      mealId,
-      { revalidate: 0, tags: ["cart"] }
-    );
+    const result = await cartService.removeItemFromCart(mealId);
 
     if (result.error) {
       console.error("❌ Failed to remove item from cart:", result.error.message);
@@ -214,9 +200,7 @@ export async function clearCart(): Promise<{ success: boolean; error: string | n
   try {
     console.log("🛒 Clearing cart");
     
-    const result = await cartService.clearCart(
-      { revalidate: 0, tags: ["cart"] }
-    );
+    const result = await cartService.clearCart();
 
     if (result.error) {
       console.error("❌ Failed to clear cart:", result.error.message);

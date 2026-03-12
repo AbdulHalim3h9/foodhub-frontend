@@ -1,13 +1,10 @@
 "use server";
 
-import { cuisineService } from "@/services/cuisine.service";
-import { Cuisine } from "@/services/cuisine.service";
+import { cuisineService, Cuisine } from "@/services/cuisine.service";
 
 export async function getCuisines(queryParams: any = {}): Promise<{ success: boolean; data: Cuisine[] | null; error: string | null }> {
   try {
-    const result = await cuisineService.getCuisines(queryParams, {
-      revalidate: 3600,
-    });
+    const result = await cuisineService.getCuisines(queryParams);
     
     if (result.error) {
       return { 
