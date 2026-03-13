@@ -18,6 +18,8 @@ import {
   SquareTerminal,
   LogOut,
   User,
+  Database,
+  Grid3X3,
 } from "lucide-react";
 import { logoutUser } from "@/services/auth.service";
 
@@ -59,6 +61,13 @@ const ADMIN_navMain = [
       { title: "Providers", url: "/dashboard/providers" },
       { title: "Users", url: "/dashboard/users" },
       { title: "Orders", url: "/dashboard/orders" },
+    ],
+  },
+  {
+    title: "Content Management",
+    icon: Database,
+    items: [
+      { title: "Categories", url: "/dashboard/content/categories" },
     ],
   },
 ];

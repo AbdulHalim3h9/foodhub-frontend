@@ -7,6 +7,7 @@ export interface Category {
   name: string;
   description?: string;
   image?: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -15,6 +16,7 @@ export interface CategoryData {
   name: string;
   description?: string;
   image?: string;
+  isActive?: boolean;
 }
 
 export interface GetCategoriesParams {
